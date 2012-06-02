@@ -4,6 +4,9 @@ open Definitions
 
 let TURN_LIMIT = 10000
 
+(* How many cards are required for a single garden to be worth a single point *)
+let GARDENS_FACTOR = 10
+
 let initialPlayer = {hand=[]; discard=[]; deck= List.replicate 7 (Coin Copper) @ List.replicate 7 (Victory Estate); bot = (fun _ x -> x)}
 
 let cardCost = function
@@ -45,6 +48,15 @@ let purchasingPowerOf = function
                 | Gold -> 3
                 | Silver -> 2
                 | Copper -> 1
+  | _ -> 0
+
+let victoryPointsFor = function
+  | Victory v -> match v with
+                   | Province -> 6
+                   | Duchy -> 3
+                   | Estate -> 1
+                   | Curse -> -1
+                   | Gardens -> 0
   | _ -> 0
 
 let initialCount = function
