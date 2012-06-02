@@ -6,9 +6,6 @@ open Constants
 (* This would be defined in Constants if not for mutual recursion issues *)
 let initialTurn = {actions = 1; buys = 1; purchasingPower = 0}  
 
-(* Complete game state *)
-
-
 (* Universally publicly visible state *)
 type sanitized = {discard : card list list; cards : Map<card, int>; trash: card list}
 
@@ -31,11 +28,13 @@ let addPurchasingPower amount gameState = withTurn {gameState.currentTurn with a
 let totalPurchasingPower id gameState = 
   gameState.currentTurn.purchasingPower + List.sumBy purchasingPowerOf (List.nth gameState.players id).hand
 
-let rec draw player count =
+let rec draw count player =
   if count = 0 then player else 
     match player.deck with 
-      | hd::tl -> draw {player with hand = hd::player.hand; deck = tl} (count - 1)
-      | [] -> draw {player with deck = Utils.shuffle player.discard} count
+      | hd::tl -> draw (count - 1) {player with hand = hd::player.hand; deck = tl}
+      | [] -> draw count {player with deck = Utils.shuffle player.discard; discard = []} 
+
+let discardAll player = {player with discard = player.hand @ player.discard; hand = [] }
 
 let buy id card gameState =
   let availableMoney = totalPurchasingPower id gameState

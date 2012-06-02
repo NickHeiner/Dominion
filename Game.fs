@@ -19,7 +19,9 @@ module Game =
         match players with
           | [] -> gameState
           | hd::tl ->
-                      let afterTurn = hd.bot playerId gameState |> GameState.nextTurn
+                      let afterTurn = hd.bot playerId gameState
+                                        |> GameState.updatePlayer playerId (fun player -> GameState.discardAll player |> GameState.draw 5)
+                                        |> GameState.nextTurn
                       turn tl afterTurn (playerId + 1)
     let afterRound = turn gameState.players gameState 0
     if gameOver afterRound then afterRound else round afterRound

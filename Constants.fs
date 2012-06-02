@@ -7,6 +7,9 @@ let TURN_LIMIT = 10000
 (* How many cards are required for a single garden to be worth a single point *)
 let GARDENS_FACTOR = 10
 
+(* Starting number of cards in a hand *)
+let CARDS_PER_HAND = 5
+
 let initialPlayer = {hand=[]; discard=[]; deck= List.replicate 7 (Coin Copper) @ List.replicate 7 (Victory Estate); bot = (fun _ x -> x)}
 
 let cardCost = function
