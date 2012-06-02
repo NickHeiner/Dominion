@@ -19,3 +19,5 @@ let withNth items index item =
 
 (* Returns a list with the same elements as the original but in randomized order *)
 let shuffle items = items
+
+let listMem list item = List.exists ((=) item) list

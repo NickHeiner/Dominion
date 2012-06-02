@@ -7,7 +7,12 @@ type ActCard = Cellar | Chapel | Chancellor | Village | Woodcutter | Feast | Mil
 
 type card = Victory of VictCard | Coin of CoinCard | Action of ActCard
 
-type player = {hand : card list; deck : card list; discard : card list}
+(* Turn for a player. purchasingPower doesn't include coins. *)
+type turn = {actions : int; buys : int; purchasingPower : int}
+
+type gameState = {players : player list; cards : Map<card, int>; trash : card list; currentTurn : turn; turnsTaken : int}
+and bot = int -> gameState -> gameState 
+and player = {hand : card list; deck : card list; discard : card list; bot : bot}
 
 (* this there a better way to enumerate over all members of the type? *)
 let allCards = [Victory Province; Victory Duchy; Coin Copper; Action Smithy]

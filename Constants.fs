@@ -4,6 +4,8 @@ open Definitions
 
 let TURN_LIMIT = 10000
 
+let initialPlayer = {hand=[]; discard=[]; deck= List.replicate 7 (Coin Copper) @ List.replicate 7 (Victory Estate); bot = (fun _ x -> x)}
+
 let cardCost = function
   | Victory v -> match v with 
                   | Province -> 8
@@ -37,6 +39,13 @@ let cardCost = function
                   | Mine -> 5
                   | Witch -> 5
                   | Adventurer -> 6
+
+let purchasingPowerOf = function
+  | Coin c -> match c with
+                | Gold -> 3
+                | Silver -> 2
+                | Copper -> 1
+  | _ -> 0
 
 let initialCount = function
   | Victory v -> match v with

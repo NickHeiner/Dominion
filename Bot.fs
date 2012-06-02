@@ -2,5 +2,7 @@
 
 open Definitions
 
-type t = player -> GameState.t -> GameState.t 
-    (* let passBot *)
+let simpleBot id gameState = 
+  if GameState.totalPurchasingPower id gameState > Constants.cardCost (Victory Estate)
+    then GameState.buy id (Victory Estate) gameState
+    else gameState
