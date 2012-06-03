@@ -4,11 +4,13 @@ open NUnit.Framework
 open FsUnit
 open Definitions
 
+let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", (fun _ x -> x)))
+
 module ActionTests =
     [<Test>] let ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
                                        let deck = List.replicate 4 (Victory Estate)
-                                       let players = (GameState.initialGameState
+                                       let players = (protoGame
                                                     |> GameState.updatePlayer id (fun player -> {player with hand = hand; deck = deck})
                                                     |> (ActionCards.playCard Smithy) id).players
                                        ((List.nth players id).hand |> Set.ofList)
@@ -26,7 +28,7 @@ module GameStateTests =
                                     |> GameState.nextTurn).currentTurn |> should equal GameState.initialGameState.currentTurn
 
     module BuyTests = 
-        let preGameState id = GameState.initialGameState |> GameState.updatePlayer id (fun player -> {player with hand = [Coin Gold]})
+        let preGameState id = protoGame |> GameState.updatePlayer id (fun player -> {player with hand = [Coin Gold]})
         let doBuy id toBuy = GameState.buy id toBuy (preGameState id)
 
         [<Test>] let ``buy updates player discard`` () = let id = 0
@@ -78,6 +80,11 @@ module GameStateTests =
                                       afterDraw.discard |> should equal []
 
 module GameTests =
+    [<Test>]
+    let ``get initial bots`` () =
+        let bot = (fun _ x -> x)
+        (Dominion.Game.getInitialState [("Foo", bot)]).players |> List.length |> should equal 1
+
     module ScorePlayerTests =
         [<Test>] let ``simple score`` () = Dominion.Game.score 
                                             {Constants.initialPlayer with hand=[Victory Estate];

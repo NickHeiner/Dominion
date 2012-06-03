@@ -26,20 +26,24 @@ module Game =
     let afterRound = turn gameState.players gameState 0
     if gameOver afterRound then afterRound else round afterRound
 
-  let bots = [Bot.estateBot]
+  let getInitialState bots =
+    bots
+      |> List.unzip
+      |> snd
+      |> Utils.withIndices 
+      |> List.fold
+      (fun gameState (index, bot) ->
+        let newPlayerWithBot = {Constants.initialPlayer with bot = bot}
+        {gameState with players = newPlayerWithBot::gameState.players})
+        GameState.initialGameState 
 
   let main argv = 
      System.Console.WriteLine("Dominion!")
-     let finalState = 
-        Utils.withIndices bots
-        |> List.fold
-            (fun gameState (index, bot) -> GameState.updatePlayer index (fun player -> {player with bot = bot}) gameState)
-            GameState.initialGameState 
-        |> round 
+     let finalState = Bot.bots |> getInitialState |> round 
      printfn "Final Scores:"
-     printfn "(id, score)"
      finalState.players
        |> List.map score
+       |> List.zip (List.map fst Bot.bots)
        |> Utils.withIndices 
        |> List.sortBy snd
        |> List.rev

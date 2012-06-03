@@ -9,7 +9,7 @@ let initialTurn = {actions = 1; buys = 1; purchasingPower = 0}
 (* Universally publicly visible state *)
 type sanitized = {discard : card list list; cards : Map<card, int>; trash: card list}
 
-let initialGameState = {players = List.replicate 2 initialPlayer; cards = List.fold (fun acc el -> Map.add el (initialCount el) acc) Map.empty allCards; 
+let initialGameState = {players = []; cards = List.fold (fun acc el -> Map.add el (initialCount el) acc) Map.empty allCards; 
                         trash = []; currentTurn = initialTurn; turnsTaken = 0 }
 
 let nextTurn gameState = {gameState with currentTurn = initialTurn; turnsTaken = gameState.turnsTaken + 1}
