@@ -14,3 +14,5 @@ let withNth items index item =
 let shuffle items = items
 
 let listMem list item = List.exists ((=) item) list
+
+let withIndices items = Seq.zip (seq { 0 .. List.length items}) (items |> List.toSeq) |> Seq.toList
