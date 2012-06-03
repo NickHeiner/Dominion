@@ -30,6 +30,7 @@ module Game =
 
   let getInitialState bots =
     bots
+      |> List.rev
       |> List.unzip
       |> snd
       |> Utils.withIndices 

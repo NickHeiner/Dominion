@@ -10,4 +10,4 @@ let estateBot id gameState = buyIfPossible id (Victory Estate) gameState
 let cashBot id gameState =
   List.fold (fun gameState card -> buyIfPossible id card gameState) gameState [Victory Province; Coin Gold; Coin Silver; Coin Copper]
 
-let bots = [("Estate", estateBot); ("Cash", cashBot); ("Pass", (fun _ x -> x))]
+let bots = [("Pass", (fun _ x -> x)); ("Estate", estateBot); ("Cash", cashBot)]
