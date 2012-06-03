@@ -39,6 +39,6 @@ let discardAll player = {player with discard = player.hand @ player.discard; han
 let buy id card gameState =
   let availableMoney = totalPurchasingPower id gameState
   let cost = cardCost card 
-  if availableMoney < cost then failwith (sprintf "%d is not enough to buy card %A" availableMoney cost) else
-    (* TODO update player purchasing power *)
-    updatePlayer id (fun player -> {player with discard = card::player.discard}) gameState
+  let withPlayer = updatePlayer id (fun player -> {player with discard = card::player.discard}) gameState
+  {withPlayer with cards = Map.add card ((Map.find card withPlayer.cards) - 1) withPlayer.cards }
+  |> withTurn {withPlayer.currentTurn with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card}

@@ -11,6 +11,38 @@ module UtilTests =
     [<Test>] let lastIndex () = Utils.withNth ["foo"; "bar"; "Baz"] 2 "grumbles" |> should equal ["foo"; "bar"; "grumbles"]
     
 module GameStateTests =
+    module BuyTests = 
+        let preGameState id = GameState.initialGameState |> GameState.updatePlayer id (fun player -> {player with hand = [Coin Gold]})
+        let doBuy id toBuy = GameState.buy id toBuy (preGameState id)
+
+        [<Test>] let ``buy updates player discard`` () = let id = 0
+                                                         let toBuy = Victory Estate
+                                                         let afterBuy = doBuy id toBuy
+                                                         (List.nth afterBuy.players id).discard |> List.head |> should equal toBuy
+
+        [<Test>] let ``buy updates card counts`` () = let id = 0
+                                                      let toBuy = Victory Estate
+                                                      let afterBuy = doBuy id toBuy
+                                                      afterBuy.cards |> Map.find toBuy |> should equal
+                                                         ((GameState.initialGameState.cards |> Map.find toBuy) - 1)
+
+        [<Test>] let ``buy lowers purchasing power`` () = let id = 0
+                                                          let toBuy = Victory Estate
+                                                          let afterBuy = doBuy id toBuy
+                                                          GameState.totalPurchasingPower id afterBuy
+                                                            |> should equal
+                                                                ((GameState.totalPurchasingPower id (preGameState id))
+                                                                    - Constants.cardCost toBuy)
+                                         
+    
+    module DiscardAllTests =
+        [<Test>] let ``simple discard all`` () = let hand = [Victory Curse; Victory Estate; Victory Province]
+                                                 let discard = [Coin Copper; Action Smithy]
+                                                 let afterDiscard =
+                                                    GameState.discardAll {Constants.initialPlayer with hand=hand; discard=discard}
+                                                 afterDiscard.hand |> should equal []
+                                                 afterDiscard.discard |> should equal (hand @ discard)
+
     [<Test>] let simpleDraw () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; Coin Gold]
                                  let afterDraw = GameState.draw 5 {hand=[]; discard=[]; deck=deck; bot=(fun _ x -> x)}
                                  afterDraw.hand |> Set.ofList |> should equal (Set.ofList deck)
