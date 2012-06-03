@@ -4,13 +4,27 @@ open NUnit.Framework
 open FsUnit
 open Definitions
 
+module ActionTests =
+    [<Test>] let ``smithy test`` () =  let id = 0
+                                       let hand = List.replicate 5 (Coin Copper)
+                                       let deck = List.replicate 4 (Victory Estate)
+                                       let players = (GameState.initialGameState
+                                                    |> GameState.updatePlayer id (fun player -> {player with hand = hand; deck = deck})
+                                                    |> (ActionCards.playCard Smithy) id).players
+                                       ((List.nth players id).hand |> Set.ofList)
+                                       |> should equal ((hand @ (List.toSeq deck |> Seq.take 3 |> Seq.toList)) |> Set.ofList)
+
 module UtilTests =
-    [<Test>] let simpleWithNth ()= Utils.withNth [5; 3; 2] 0 6 |> should equal [6; 3; 2]
+    [<Test>] let simpleWithNth () = Utils.withNth [5; 3; 2] 0 6 |> should equal [6; 3; 2]
     [<Test>] let negIndex () = (fun () -> Utils.withNth [5; 3; 2] -1 6 |> ignore) |> should throw typeof<System.ArgumentException>
     [<Test>] let tooBigIndex () = (fun () -> Utils.withNth [5; 3; 2] 100 46 |> ignore) |> should throw typeof<System.ArgumentException>
     [<Test>] let lastIndex () = Utils.withNth ["foo"; "bar"; "Baz"] 2 "grumbles" |> should equal ["foo"; "bar"; "grumbles"]
     
 module GameStateTests =
+    [<Test>] let ``next turn`` () = (GameState.initialGameState
+                                    |> GameState.withTurn {GameState.initialGameState.currentTurn with purchasingPower = 3}
+                                    |> GameState.nextTurn).currentTurn |> should equal GameState.initialGameState.currentTurn
+
     module BuyTests = 
         let preGameState id = GameState.initialGameState |> GameState.updatePlayer id (fun player -> {player with hand = [Coin Gold]})
         let doBuy id toBuy = GameState.buy id toBuy (preGameState id)
