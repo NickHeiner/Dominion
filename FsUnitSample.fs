@@ -2,7 +2,7 @@ namespace Dominion.Tests
 
 open NUnit.Framework
 open FsUnit
-
+(*
 type LightBulb(state) =
    member x.On = state
    override x.ToString() =
@@ -21,3 +21,4 @@ type ``Given a LightBulb that has had its state set to true`` ()=
    [<Test>] member test.
     ``when I convert it to a string it becomes "On".`` ()=
            string lightBulb |> should equal "On"
+           *)

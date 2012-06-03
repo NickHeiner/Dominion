@@ -26,7 +26,6 @@ module Game =
     let afterRound = turn gameState.players gameState 0
     if gameOver afterRound then afterRound else round afterRound
 
-  [<EntryPoint>]
   let main argv = 
      System.Console.WriteLine("Dominion!")
      let finalState = round GameState.initialGameState
