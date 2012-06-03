@@ -8,11 +8,9 @@ module Game =
                             || Map.find (Victory Province) gameState.cards = 0
                             || Map.filter (fun _ count -> count = 0) gameState.cards |> Map.toList |> List.length >= 3
 
-  let allCards player = player.hand @ player.discard @ player.deck
-  
   let score player = 
-    let cards = allCards player
-    let gardensCount = List.sumBy (function Victory Gardens -> 1 | _ -> 0) cards
+    let cards = Utils.allCards player
+    let gardensCount = Utils.countOccurences cards (Victory Gardens)
     (List.sumBy victoryPointsFor cards) + gardensCount * (List.length cards / GARDENS_FACTOR)
     
   let rec round (gameState : gameState) = 
@@ -45,7 +43,7 @@ module Game =
      let finalState = Bot.bots |> getInitialState |> round 
      printfn "Final Scores:"
      finalState.players
-       |> List.map (fun player -> (player, allCards player |> Seq.ofList |> Seq.countBy (fun x -> x) |> Map.ofSeq))
+       |> List.map (fun player -> (player, Utils.allCards player |> Seq.ofList |> Seq.countBy (fun x -> x) |> Map.ofSeq))
        |> List.map (fun (player, cardCounts) -> (score player, cardCounts))
        |> List.zip (List.map fst Bot.bots)
        |> List.sortBy (fun (_, (score, _)) -> score)

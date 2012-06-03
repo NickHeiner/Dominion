@@ -10,6 +10,8 @@ let withNth items index item =
         | [] -> invalidArg "index" (sprintf "invalid index: %d" currIndex)
   helper index items
 
+let countOccurences list item = List.filter (fun x -> x = item) list |> List.length
+
 (* Returns a list with the same elements as the original but in randomized order *)
 let shuffle items = items
 
@@ -21,3 +23,5 @@ let prettyPrintCardCounts cardCounts = cardCounts
                                           |> Map.toList
                                           |> List.map (fun (card, count) -> sprintf "\t%A\t%d" card count)
                                           |> String.concat "\n"
+
+let allCards (player : Definitions.player) = player.hand @ player.discard @ player.deck
