@@ -3,6 +3,7 @@
 open NUnit.Framework
 open FsUnit
 open Definitions
+open BotHandler
 
 let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", (fun _ x -> x)))
 
@@ -12,7 +13,8 @@ module ActionTests =
                                        let deck = List.replicate 4 (Victory Estate)
                                        let players = (protoGame
                                                     |> GameState.updatePlayer id (fun player -> {player with hand = hand; deck = deck})
-                                                    |> (ActionCards.playCard Smithy) id).players
+                                                    |> Context.make id
+                                                    |> Context.act Smithy).query.
                                        ((List.nth players id).hand |> Set.ofList)
                                        |> should equal ((hand @ (List.toSeq deck |> Seq.take 3 |> Seq.toList)) |> Set.ofList)
 

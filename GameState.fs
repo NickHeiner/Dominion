@@ -16,9 +16,11 @@ let nextTurn gameState = {gameState with currentTurn = initialTurn; turnsTaken =
 
 let sanitize gameState = {discard = List.map (fun (player : player) -> player.discard) gameState.players;
                             cards = gameState.cards; trash = gameState.trash}
+
+let getPlayer id gameState = List.nth gameState.players id
                             
 let updatePlayer id (update : player -> player) gameState =
-  {gameState with players = List.nth gameState.players id |> update |> Utils.withNth gameState.players id}
+  {gameState with players = getPlayer id gameState |> update |> Utils.withNth gameState.players id}
 
 let withTurn turn gameState = {gameState with currentTurn = turn}
 let addActions count gameState = withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions + count} gameState

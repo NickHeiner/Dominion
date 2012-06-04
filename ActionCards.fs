@@ -9,5 +9,5 @@ let actionOfCard = function
   | Cellar -> fun _ gameState -> GameState.addActions 1 gameState
   | _ -> failwith "not impl"
 
-let playCard card gameState = gameState |> actionOfCard card
+(* let playCard card gameState = gameState |> actionOfCard card *)
 

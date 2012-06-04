@@ -47,6 +47,7 @@
     <Compile Include="FsUnitSample.fs" />
     <Compile Include="GameState.fs" />
     <Compile Include="ActionCards.fs" />
+    <Compile Include="BotHandler.fs" />
     <Compile Include="Bot.fs" />
     <Compile Include="Game.fs" />
     <Compile Include="Tests.fs" />

@@ -2,8 +2,7 @@
 
 open Definitions
 
-let canBuy id gameState card = GameState.totalPurchasingPower id gameState > Constants.cardCost card
-let buyIfPossible id card gameState = if canBuy id gameState card then GameState.buy id card gameState else gameState
+let buyIfPossible id card gameState = if BotHandler.Validate.canBuy id gameState card then GameState.buy id card gameState else gameState
 let drawCardOdds player card = let allCards = Utils.allCards player
                                float (Utils.countOccurences allCards card) / float (List.length allCards)
 let expectedPerHand player card = drawCardOdds player card * float Constants.CARDS_PER_HAND
