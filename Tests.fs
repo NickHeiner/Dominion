@@ -3,10 +3,11 @@
 open NUnit.Framework
 open FsUnit
 open Definitions
+open Constants
 open BotHandler
 
-let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", (fun _ x -> x)))
-
+let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", []))
+(* 
 module ActionTests =
     [<Test>] let ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
@@ -16,86 +17,130 @@ module ActionTests =
                                                     |> Context.make id
                                                     |> Context.act Smithy).query.
                                        ((List.nth players id).hand |> Set.ofList)
-                                       |> should equal ((hand @ (List.toSeq deck |> Seq.take 3 |> Seq.toList)) |> Set.ofList)
+                                       |> should equal ((hand @ (List.toSeq deck |> Seq.take SMITHY_CARDS_DRAW |> Seq.toList)) |> Set.ofList)
+                                       *)
 
+module BotTests =
+    let buy toBuy hand = 
+        let id = 0
+        protoGame
+        |> GameState.updatePlayer id (fun player -> {player with hand = hand})
+        |> BotHandler.GameStateUpdate.applyFirstValid id [Buy toBuy]
+        |> GameState.getPlayer id
+        |> Utils.allCards
+
+    let [<Test>] ``pass bot does nothing`` () = BotHandler.GameStateUpdate.applyFirstValid 0 [] protoGame |> should equal protoGame
+    let [<Test>] ``legal buy`` () = 
+        let toBuy = Victory Duchy
+        buy toBuy [Coin Gold; Coin Gold] |> should contain toBuy
+
+    let [<Test>] ``illegal buy`` () = 
+        let toBuy = Victory Province
+        buy toBuy [Coin Gold; Coin Gold] |> List.exists ((=) toBuy) |> should be False
+
+    let [<Test>] ``legal action`` () =
+        let id = 0
+        let deck = [Coin Copper; Victory Estate; Victory Duchy]
+        let hand = (protoGame 
+                    |> GameState.updatePlayer id (fun player -> {player with hand = [Action Smithy]; deck = deck})
+                    |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
+                    |> GameState.getPlayer id).hand 
+                    |> Set.ofList
+        hand |> should equal (Set.ofList deck)
+
+    let [<Test>] ``illegal action`` () =
+        let id = 0
+        let origHand = [Coin Copper]
+        (protoGame 
+        |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
+        |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
+        |> GameState.getPlayer id).hand 
+        |> should equal origHand
+
+    module GameStateUpdateTests =
+        module BuyTests = 
+            let preGameState id = protoGame |> GameState.updatePlayer id (fun player -> {player with hand = [Coin Gold]})
+            let doBuy id toBuy = BotHandler.GameStateUpdate.buy id toBuy (preGameState id)
+
+            let [<Test>] ``buy updates player discard`` () = let id = 0
+                                                             let toBuy = Victory Estate
+                                                             let afterBuy = doBuy id toBuy
+                                                             (List.nth afterBuy.players id).discard |> List.head |> should equal toBuy
+
+            let [<Test>] ``buy updates card counts`` () = let id = 0
+                                                          let toBuy = Victory Estate
+                                                          let afterBuy = doBuy id toBuy
+                                                          afterBuy.cards |> Map.find toBuy |> should equal
+                                                             ((GameState.initialGameState.cards |> Map.find toBuy) - 1)
+
+            let [<Test>] ``buy lowers purchasing power`` () = let id = 0
+                                                              let toBuy = Victory Estate
+                                                              let afterBuy = doBuy id toBuy
+                                                              GameState.totalPurchasingPower id afterBuy
+                                                                |> should equal
+                                                                    ((GameState.totalPurchasingPower id (preGameState id))
+                                                                        - Constants.cardCost toBuy)
+    
 module UtilTests =
-    [<Test>] let simpleWithNth () = Utils.withNth [5; 3; 2] 0 6 |> should equal [6; 3; 2]
-    [<Test>] let negIndex () = (fun () -> Utils.withNth [5; 3; 2] -1 6 |> ignore) |> should throw typeof<System.ArgumentException>
-    [<Test>] let tooBigIndex () = (fun () -> Utils.withNth [5; 3; 2] 100 46 |> ignore) |> should throw typeof<System.ArgumentException>
-    [<Test>] let lastIndex () = Utils.withNth ["foo"; "bar"; "Baz"] 2 "grumbles" |> should equal ["foo"; "bar"; "grumbles"]
+    let [<Test>] simpleWithNth () = Utils.withNth [5; 3; 2] 0 6 |> should equal [6; 3; 2]
+    let [<Test>] negIndex () = (fun () -> Utils.withNth [5; 3; 2] -1 6 |> ignore) |> should throw typeof<System.ArgumentException>
+    let [<Test>] tooBigIndex () = (fun () -> Utils.withNth [5; 3; 2] 100 46 |> ignore) |> should throw typeof<System.ArgumentException>
+    let [<Test>] lastIndex () = Utils.withNth ["foo"; "bar"; "Baz"] 2 "grumbles" |> should equal ["foo"; "bar"; "grumbles"]
     
 module GameStateTests =
-    [<Test>] let ``next turn`` () = (GameState.initialGameState
+    let [<Test>] discard () = let id = 0
+                              let toDiscard = Victory Estate
+                              (protoGame
+                                |> GameState.updatePlayer id (fun player -> {player with hand = [toDiscard]})
+                                |> GameState.discard toDiscard id 
+                                |> GameState.getPlayer id).hand |> should equal []
+
+    let [<Test>] ``next turn`` () = (GameState.initialGameState
                                     |> GameState.withTurn {GameState.initialGameState.currentTurn with purchasingPower = 3}
                                     |> GameState.nextTurn).currentTurn |> should equal GameState.initialGameState.currentTurn
 
-    module BuyTests = 
-        let preGameState id = protoGame |> GameState.updatePlayer id (fun player -> {player with hand = [Coin Gold]})
-        let doBuy id toBuy = GameState.buy id toBuy (preGameState id)
-
-        [<Test>] let ``buy updates player discard`` () = let id = 0
-                                                         let toBuy = Victory Estate
-                                                         let afterBuy = doBuy id toBuy
-                                                         (List.nth afterBuy.players id).discard |> List.head |> should equal toBuy
-
-        [<Test>] let ``buy updates card counts`` () = let id = 0
-                                                      let toBuy = Victory Estate
-                                                      let afterBuy = doBuy id toBuy
-                                                      afterBuy.cards |> Map.find toBuy |> should equal
-                                                         ((GameState.initialGameState.cards |> Map.find toBuy) - 1)
-
-        [<Test>] let ``buy lowers purchasing power`` () = let id = 0
-                                                          let toBuy = Victory Estate
-                                                          let afterBuy = doBuy id toBuy
-                                                          GameState.totalPurchasingPower id afterBuy
-                                                            |> should equal
-                                                                ((GameState.totalPurchasingPower id (preGameState id))
-                                                                    - Constants.cardCost toBuy)
-                                         
-    
     module DiscardAllTests =
-        [<Test>] let ``simple discard all`` () = let hand = [Victory Curse; Victory Estate; Victory Province]
+        let [<Test>] ``simple discard all`` () = let hand = [Victory Curse; Victory Estate; Victory Province]
                                                  let discard = [Coin Copper; Action Smithy]
                                                  let afterDiscard =
                                                     GameState.discardAll {Constants.initialPlayer with hand=hand; discard=discard}
                                                  afterDiscard.hand |> should equal []
                                                  afterDiscard.discard |> should equal (hand @ discard)
 
-    [<Test>] let simpleDraw () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; Coin Gold]
-                                 let afterDraw = GameState.draw 5 {hand=[]; discard=[]; deck=deck; bot=(fun _ x -> x)}
+    let [<Test>] simpleDraw () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; Coin Gold]
+                                 let afterDraw = GameState.draw 5 {hand=[]; discard=[]; deck=deck; bot=[]}
                                  afterDraw.hand |> Set.ofList |> should equal (Set.ofList deck)
                                  afterDraw.deck |> should equal []
 
-    [<Test>] let biggerDeck () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; 
+    let [<Test>] biggerDeck () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; 
                                                 Coin Gold; Victory Estate; Coin Silver; Coin Silver]
                                  let drawAmount = 5
-                                 let afterDraw = GameState.draw drawAmount {hand=[]; discard=[]; deck=deck; bot=(fun _ x -> x)}
+                                 let afterDraw = GameState.draw drawAmount {hand=[]; discard=[]; deck=deck; bot=[]}
                                  afterDraw.hand |> List.length |> should equal drawAmount
                                  afterDraw.hand |> Set.ofList |> should equal (deck |> List.toSeq |> Seq.take drawAmount |> Set.ofSeq)
                                  afterDraw.deck |> should equal (deck |> List.toSeq |> Seq.skip drawAmount |> Seq.toList)
 
-    [<Test>] let smallerThanDeck () = let deck = [Victory Estate]
+    let [<Test>] smallerThanDeck () = let deck = [Victory Estate]
                                       let discard = List.replicate 10 (Coin Copper)
                                       let drawAmount = 5
-                                      let afterDraw = GameState.draw drawAmount {hand=[]; discard=discard; deck=deck; bot=(fun _ x -> x)}
+                                      let afterDraw = GameState.draw drawAmount {hand=[]; discard=discard; deck=deck; bot=[]}
                                       afterDraw.hand |> List.length |> should equal drawAmount
                                       afterDraw.discard |> should equal []
 
 module GameTests =
-    [<Test>]
-    let ``get initial bots`` () =
-        let bot = (fun _ x -> x)
+    let [<Test>] ``get initial bots`` () =
+        let bot = []
         (Dominion.Game.getInitialState [("Foo", bot)]).players |> List.length |> should equal 1
 
     module ScorePlayerTests =
-        [<Test>] let ``simple score`` () = Dominion.Game.score 
+        let [<Test>] ``simple score`` () = Dominion.Game.score 
                                             {Constants.initialPlayer with hand=[Victory Estate];
                                                                             discard=[Victory Duchy; Coin Copper];
                                                                             deck=[Victory Province; Action Smithy]}
                                             |> should equal
                                                 (List.sumBy Constants.victoryPointsFor [Victory Estate; Victory Duchy; Victory Province])
 
-        [<Test>] let ``curse score`` () = Dominion.Game.score 
+        let [<Test>] ``curse score`` () = Dominion.Game.score 
                                             {Constants.initialPlayer with hand=[Victory Estate; Victory Curse];
                                                                             discard=[Victory Duchy; Coin Copper];
                                                                             deck=[Victory Province; Action Smithy]}
@@ -103,31 +148,31 @@ module GameTests =
                                                 (List.sumBy Constants.victoryPointsFor
                                                 [Victory Estate; Victory Duchy; Victory Curse; Victory Province])
 
-        [<Test>] let ``gardens score`` () = Dominion.Game.score 
+        let [<Test>] ``gardens score`` () = Dominion.Game.score 
                                                 {Constants.initialPlayer with hand=[]; discard=[Victory Gardens]; 
                                                                               deck=List.replicate 43 (Coin Copper)}
                                             |> should equal 4
 
     module GameOverTests =
-        [<Test>] let ``game not over initially`` () = Dominion.Game.gameOver GameState.initialGameState |> should be False
+        let [<Test>] ``game not over initially`` () = Dominion.Game.gameOver GameState.initialGameState |> should be False
     
-        [<Test>] let ``game over after turn limit`` () = Dominion.Game.gameOver
+        let [<Test>] ``game over after turn limit`` () = Dominion.Game.gameOver
                                                             {GameState.initialGameState with turnsTaken = Constants.TURN_LIMIT + 1}
                                                             |> should be True
 
-        [<Test>] let ``game over when provinces gone`` () = Dominion.Game.gameOver
+        let [<Test>] ``game over when provinces gone`` () = Dominion.Game.gameOver
                                                                 {GameState.initialGameState with
                                                                     cards = Map.add (Victory Province) 0 GameState.initialGameState.cards}
                                                             |> should be True
 
-        [<Test>] let ``game over when three cards gone`` () = let cards = GameState.initialGameState.cards 
+        let [<Test>] ``game over when three cards gone`` () = let cards = GameState.initialGameState.cards 
                                                                             |> Map.add (Victory Estate) 0
                                                                             |> Map.add (Coin Copper) 0
                                                                             |> Map.add (Action Smithy) 0
                                                               Dominion.Game.gameOver {GameState.initialGameState with cards = cards}
                                                             |> should be True
 
-        [<Test>] let ``game not over when two cards gone`` () = let cards = GameState.initialGameState.cards 
+        let [<Test>] ``game not over when two cards gone`` () = let cards = GameState.initialGameState.cards 
                                                                             |> Map.add (Victory Estate) 0
                                                                             |> Map.add (Action Smithy) 0
                                                                 Dominion.Game.gameOver {GameState.initialGameState with cards = cards}

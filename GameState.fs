@@ -38,9 +38,9 @@ let rec draw count player =
 
 let discardAll player = {player with discard = player.hand @ player.discard; hand = [] }
 
-let buy id card gameState =
-  let availableMoney = totalPurchasingPower id gameState
-  let cost = cardCost card 
-  let withPlayer = updatePlayer id (fun player -> {player with discard = card::player.discard}) gameState
-  {withPlayer with cards = Map.add card ((Map.find card withPlayer.cards) - 1) withPlayer.cards }
-  |> withTurn {withPlayer.currentTurn with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card}
+let discard card id gameState =
+    match List.tryFind ((=) card) (getPlayer id gameState).hand with
+        | Some _ -> updatePlayer id
+                        (fun player -> {player with hand = Utils.withoutFirst ((=) card) player.hand; discard = card::player.discard})
+                        gameState
+        | None -> invalidArg "card" (sprintf "Player %d does not have card %A in hand" id card)

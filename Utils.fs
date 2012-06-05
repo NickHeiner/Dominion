@@ -25,3 +25,15 @@ let prettyPrintCardCounts cardCounts = cardCounts
                                           |> String.concat "\n"
 
 let allCards (player : Definitions.player) = player.hand @ player.discard @ player.deck
+
+(* Returns a list without the first item for which pred returns true *)
+let rec withoutFirst pred = function
+    | hd::tl when pred hd -> tl
+    | hd::tl -> hd::(withoutFirst pred tl)
+    | [] -> []
+
+let contains item list =
+    match List.tryFind ((=) item) list with
+        | Some _ -> true
+        | None -> false
+        
