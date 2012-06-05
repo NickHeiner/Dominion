@@ -19,5 +19,10 @@ let smithyBot id gameState =
   |> if expectedPerHand (List.nth gameState.players id) (Action Smithy) < 1.0
        then buyIfPossible id (Action Smithy)
        else buyAll id [Coin Gold; Coin Silver; Coin Copper]
+
+let smithyBot2 =
+    [play (Action Smithy)],
+    [always buy (Victory Province);
+     _when (expectedPerHand (Action Smithy) < 1.0) (buy (Action Smithy));]
   
 let bots = [("Pass", (fun _ x -> x)); ("Estate", estateBot); ("Cash", cashBot); ("Smithy", smithyBot)]
