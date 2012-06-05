@@ -5,9 +5,10 @@
     
     module Query =
         let allCards gameState playerId = List.nth gameState.players playerId |> Utils.allCards
-        let canBuy id gameState card = GameState.totalPurchasingPower id gameState > Constants.cardCost card;
-        (* TODO verify that there are enough buys and actions *)
+        let canBuy id gameState card = GameState.totalPurchasingPower id gameState > Constants.cardCost card
+                                        && gameState.currentTurn.buys > 0
         let canAct id gameState actCard = Utils.contains (Action actCard) (GameState.getPlayer id gameState).hand
+                                            && gameState.currentTurn.actions > 0
 
         let isValid id gameState = function
             | Act actCard -> canAct id gameState actCard

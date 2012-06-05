@@ -21,37 +21,53 @@ module ActionTests =
                                        *)
 
 module BotTests =
-    let buy toBuy hand = 
+    let buy toBuy hand game = 
         let id = 0
-        protoGame
+        (game 
         |> GameState.updatePlayer id (fun player -> {player with hand = hand})
         |> BotHandler.GameStateUpdate.applyFirstValid id [Buy toBuy]
-        |> GameState.getPlayer id
-        |> Utils.allCards
+        |> GameState.getPlayer id).discard
 
     let [<Test>] ``pass bot does nothing`` () = BotHandler.GameStateUpdate.applyFirstValid 0 [] protoGame |> should equal protoGame
     let [<Test>] ``legal buy`` () = 
         let toBuy = Victory Duchy
-        buy toBuy [Coin Gold; Coin Gold] |> should contain toBuy
+        buy toBuy [Coin Gold; Coin Gold] protoGame |> should contain toBuy
 
-    let [<Test>] ``illegal buy`` () = 
+    let [<Test>] ``illegal buy not enough money`` () = 
         let toBuy = Victory Province
-        buy toBuy [Coin Gold; Coin Gold] |> List.exists ((=) toBuy) |> should be False
+        buy toBuy [Coin Gold; Coin Gold] protoGame |> Utils.contains toBuy |> should be False
+
+    let [<Test>] ``illegal buy not enough buys`` () = 
+        let toBuy = Victory Estate
+        protoGame
+        |> GameState.withTurn {protoGame.currentTurn with buys = 0}
+        |> buy toBuy [Coin Gold; Coin Gold]
+        |> Utils.contains toBuy |> should be False
 
     let [<Test>] ``legal action`` () =
         let id = 0
         let deck = [Coin Copper; Victory Estate; Victory Duchy]
-        let hand = (protoGame 
-                    |> GameState.updatePlayer id (fun player -> {player with hand = [Action Smithy]; deck = deck})
-                    |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
-                    |> GameState.getPlayer id).hand 
-                    |> Set.ofList
-        hand |> should equal (Set.ofList deck)
+        (protoGame 
+        |> GameState.updatePlayer id (fun player -> {player with hand = [Action Smithy]; deck = deck})
+        |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
+        |> GameState.getPlayer id).hand 
+        |> Set.ofList
+        |> should equal (Set.ofList deck)
 
-    let [<Test>] ``illegal action`` () =
+    let [<Test>] ``illegal action doesn't have card`` () =
         let id = 0
         let origHand = [Coin Copper]
         (protoGame 
+        |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
+        |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
+        |> GameState.getPlayer id).hand 
+        |> should equal origHand
+
+    let [<Test>] ``illegal action not enough actions`` () =
+        let id = 0
+        let origHand = [Action Smithy]
+        (protoGame 
+        |> GameState.withTurn {protoGame.currentTurn with actions = 0}
         |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
         |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
         |> GameState.getPlayer id).hand 
