@@ -27,7 +27,7 @@ let cardCost = function
                   | Silver -> 3
                   | Copper -> 0
   | Action a -> match a with
-                  | Cellar -> 2
+                  | Cellar _ -> 2
                   | Chapel _ -> 2
                   | Chancellor _ -> 3 
                   | Village -> 3

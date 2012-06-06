@@ -36,6 +36,8 @@ let rec draw count player =
       | hd::tl -> draw (count - 1) {player with hand = hd::player.hand; deck = tl}
       | [] -> draw count {player with deck = Utils.shuffle player.discard; discard = []} 
 
+let drawFor count id = updatePlayer id (fun player -> draw count player)
+
 let discardAll player = {player with discard = player.hand @ player.discard; hand = [] }
 
 let removeCard getDiscard card id gameState =

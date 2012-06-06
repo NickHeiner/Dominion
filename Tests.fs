@@ -11,6 +11,25 @@ let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [
 module ActionTests =
     let withActionCard id card = GameState.updatePlayer id (fun player -> {player with hand = (Action card)::player.hand})
 
+    let [<Test>] ``cellar no discard`` () = let id = 0
+                                            let cellar = Cellar []
+                                            (protoGame
+                                            |> withActionCard id cellar
+                                            |> BotHandler.GameStateUpdate.act id cellar).currentTurn.actions |> should equal 1
+
+    let [<Test>] cellar () = let id = 0
+                             let toDiscard = [Coin Copper; Coin Copper; Victory Duchy]
+                             let toKeep = [Victory Province; Victory Estate; Coin Copper]
+                             let deck = [Action Smithy; Action Village; Action Smithy]
+                             let cellar = Cellar toDiscard
+                             let player = protoGame
+                                             |> GameState.updatePlayer id
+                                                (fun player -> {player with hand = (Action cellar)::toKeep @ toDiscard; deck = deck})
+                                             |> BotHandler.GameStateUpdate.act id cellar
+                                             |> GameState.getPlayer id
+                             (Set.ofList player.hand) |> should equal (Set.ofList (toKeep @ deck))
+                             player.deck |> should equal []
+
     let [<Test>] chapel () = let id = 0
                              let chapel = Chapel (Some (Action Smithy), Some (Coin Copper), Some (Victory Estate), None)
                              let toKeep = [Victory Province; Victory Duchy]

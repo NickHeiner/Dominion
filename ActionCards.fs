@@ -7,7 +7,11 @@ type action = int -> gameState -> gameState
 
 let actionOfCard = function
   | Smithy -> fun id gameState -> GameState.updatePlayer id (GameState.draw SMITHY_CARDS_DRAW) gameState
-  | Cellar -> fun _ gameState -> GameState.addActions 1 gameState
+  | Cellar toDiscard -> fun id gameState -> List.fold (fun gameState card -> gameState
+                                                                                |> GameState.discard card id
+                                                                                |> GameState.drawFor 1 id)
+                                                gameState toDiscard
+                                           |> GameState.addActions 1
   | Chapel (card1, card2, card3, card4) -> fun id gameState -> List.fold
                                                                 (fun gameState card -> GameState.trash card id gameState) gameState
                                                                 (Utils.withoutNone [card1; card2; card3; card4])
