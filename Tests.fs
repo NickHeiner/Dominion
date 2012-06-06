@@ -7,18 +7,28 @@ open Constants
 open BotHandler
 
 let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [])))
-(* 
+
 module ActionTests =
-    [<Test>] let ``smithy test`` () =  let id = 0
+    let [<Test>] chapel () = let id = 0
+                             let chapel = Chapel (Some (Action Smithy), Some (Coin Copper), Some (Victory Estate), None)
+                             let toKeep = [Victory Province; Victory Duchy]
+                             let hand = toKeep @ [Action Smithy; Coin Copper; Victory Estate]
+                             (protoGame
+                             |> GameState.updatePlayer id (fun player -> {player with hand = (Action chapel)::hand})
+                             |> BotHandler.GameStateUpdate.act id chapel
+                             |> GameState.getPlayer id).hand
+                             |> Set.ofList
+                             |> should equal toKeep
+
+    let [<Test>] ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
                                        let deck = List.replicate 4 (Victory Estate)
-                                       let players = (protoGame
-                                                    |> GameState.updatePlayer id (fun player -> {player with hand = hand; deck = deck})
-                                                    |> Context.make id
-                                                    |> Context.act Smithy).query.
-                                       ((List.nth players id).hand |> Set.ofList)
+                                       (protoGame
+                                       |> GameState.updatePlayer id (fun player -> {player with hand = (Action Smithy)::hand; deck = deck})
+                                       |> BotHandler.GameStateUpdate.act id Smithy
+                                       |> GameState.getPlayer id).hand
+                                       |> Set.ofList
                                        |> should equal ((hand @ (List.toSeq deck |> Seq.take SMITHY_CARDS_DRAW |> Seq.toList)) |> Set.ofList)
-                                       *)
 
 module BotTests =
     let buy toBuy hand game = 

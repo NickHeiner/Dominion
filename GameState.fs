@@ -38,9 +38,13 @@ let rec draw count player =
 
 let discardAll player = {player with discard = player.hand @ player.discard; hand = [] }
 
-let discard card id gameState =
+let removeCard getDiscard card id gameState =
     match List.tryFind ((=) card) (getPlayer id gameState).hand with
         | Some _ -> updatePlayer id
-                        (fun player -> {player with hand = Utils.withoutFirst ((=) card) player.hand; discard = card::player.discard})
+                        (fun player -> {player with hand = Utils.withoutFirst ((=) card) player.hand; discard = getDiscard card player.discard})
                         gameState
         | None -> invalidArg "card" (sprintf "Player %d does not have card %A in hand" id card)
+
+let discard card = removeCard (fun card discard -> card::discard) card
+let trash = removeCard (fun _ discard -> discard)
+    

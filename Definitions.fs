@@ -2,10 +2,11 @@
 
 type VictCard = Province | Duchy | Estate | Gardens | Curse
 type CoinCard = Gold | Silver | Copper 
-type ActCard = Cellar | Chapel | Chancellor | Village | Woodcutter | Feast | Militia | Moneylender | Remodel | Smithy 
+type ActCard = Cellar | Chapel of (card option * card option* card option* card option) 
+                | Chancellor | Village | Woodcutter | Feast | Militia | Moneylender | Remodel | Smithy 
                 | Spy | Thief | ThroneRoom | CouncilRoom | Festival | Laboratory | Library | Market | Mine | Witch | Adventurer
 
-type card = Victory of VictCard | Coin of CoinCard | Action of ActCard
+and card = Victory of VictCard | Coin of CoinCard | Action of ActCard
 
 (* Turn for a player. purchasingPower doesn't include coins. *)
 type turn = {actions : int; buys : int; purchasingPower : int}

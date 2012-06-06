@@ -36,4 +36,6 @@ let contains item list =
     match List.tryFind ((=) item) list with
         | Some _ -> true
         | None -> false
+
+let withoutNone items = List.fold (fun list -> function Some el -> el::list | None -> list) [] items |> List.rev
         
