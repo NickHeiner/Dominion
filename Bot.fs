@@ -24,8 +24,7 @@ let smithyBot2 =
      _when (expectedPerHand (Action Smithy) < 1.0) (buy (Action Smithy));]
   *)
 
- 
-let estateBot = [Buy (Victory Estate)]
+let estateBot = [], [Buy (Victory Estate)]
 
-let bots = ["Pass", []; "Estate", estateBot]
+let bots = ["Pass", ([], []); "Estate", estateBot]
 (* let bots = [("Pass", (fun _ x -> x)); ("Estate", estateBot); ("Cash", cashBot); ("Smithy", smithyBot)] *)

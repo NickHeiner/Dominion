@@ -10,10 +10,6 @@
         let canAct id gameState actCard = Utils.contains (Action actCard) (GameState.getPlayer id gameState).hand
                                             && gameState.currentTurn.actions > 0
 
-        let isValid id gameState = function
-            | Act actCard -> canAct id gameState actCard
-            | Buy card -> canBuy id gameState card
-
     module GameStateUpdate =
         let act id actCard gameState = (ActionCards.actionOfCard actCard) id gameState 
                                         |> GameState.withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions - 1}
@@ -27,12 +23,12 @@
                                     |> GameState.withTurn {withPlayer.currentTurn
                                                             with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card}
 
-        let apply id gameState = function
-            | Act actCard when Query.canAct id gameState actCard -> act id actCard gameState
-            | Buy card when Query.canBuy id gameState card-> buy id card gameState
-            | _ -> gameState
+        let applyFirstValidBuy id buys gameState =
+            match List.tryFind (function Buy card -> Query.canBuy id gameState card) buys with
+                | Some (Buy card) -> buy id card gameState
+                | None -> gameState
 
-        let applyFirstValid id updates gameState =
-            match List.tryFind (Query.isValid id gameState) updates with
-                | Some update -> apply id gameState update
+        let applyFirstValidAction id acts gameState =
+            match List.tryFind (function Act actCard -> Query.canAct id gameState actCard) acts with
+                | Some (Act actCard) -> act id actCard gameState
                 | None -> gameState

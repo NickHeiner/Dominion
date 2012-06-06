@@ -19,10 +19,12 @@ module Game =
         match players with
           | [] -> gameState
           | hd::tl ->
-                      let rec applyUpdate bot gameState =
-                        let afterUpdate = BotHandler.GameStateUpdate.applyFirstValid playerId bot gameState
-                        if afterUpdate = gameState then gameState else applyUpdate bot afterUpdate
-                      let afterTurn = applyUpdate hd.bot gameState
+                      let rec applyUpdate apply bot gameState =
+                        let afterUpdate = apply playerId bot gameState
+                        if afterUpdate = gameState then gameState else applyUpdate apply bot afterUpdate
+                      let acts, buys = hd.bot
+                      let afterTurn = applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction acts gameState
+                                        |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy buys
                                         |> GameState.updatePlayer playerId (fun player -> GameState.discardAll player |> GameState.draw 5)
                                         |> GameState.nextTurn
                       turn tl afterTurn (playerId + 1)

@@ -12,7 +12,7 @@ let CARDS_PER_HAND = 5
 
 let SMITHY_CARDS_DRAW = 3
 
-let initialPlayer = {hand=[]; discard=[]; deck= List.replicate 7 (Coin Copper) @ List.replicate 7 (Victory Estate); bot = []}
+let initialPlayer = {hand=[]; discard=[]; deck= List.replicate 7 (Coin Copper) @ List.replicate 7 (Victory Estate); bot = [], []}
 
 let cardCost = function
   | Victory v -> match v with 

@@ -6,7 +6,7 @@ open Definitions
 open Constants
 open BotHandler
 
-let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", []))
+let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [])))
 (* 
 module ActionTests =
     [<Test>] let ``smithy test`` () =  let id = 0
@@ -25,10 +25,14 @@ module BotTests =
         let id = 0
         (game 
         |> GameState.updatePlayer id (fun player -> {player with hand = hand})
-        |> BotHandler.GameStateUpdate.applyFirstValid id [Buy toBuy]
+        |> BotHandler.GameStateUpdate.applyFirstValidBuy id [Buy toBuy]
         |> GameState.getPlayer id).discard
 
-    let [<Test>] ``pass bot does nothing`` () = BotHandler.GameStateUpdate.applyFirstValid 0 [] protoGame |> should equal protoGame
+    let [<Test>] ``pass bot does nothing`` () = 
+        BotHandler.GameStateUpdate.applyFirstValidBuy 0 [] protoGame 
+        |> BotHandler.GameStateUpdate.applyFirstValidAction 0 []
+        |> should equal protoGame
+
     let [<Test>] ``legal buy`` () = 
         let toBuy = Victory Duchy
         buy toBuy [Coin Gold; Coin Gold] protoGame |> should contain toBuy
@@ -49,7 +53,7 @@ module BotTests =
         let deck = [Coin Copper; Victory Estate; Victory Duchy]
         (protoGame 
         |> GameState.updatePlayer id (fun player -> {player with hand = [Action Smithy]; deck = deck})
-        |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
+        |> BotHandler.GameStateUpdate.applyFirstValidAction id [Act Smithy]
         |> GameState.getPlayer id).hand 
         |> Set.ofList
         |> should equal (Set.ofList deck)
@@ -59,7 +63,7 @@ module BotTests =
         let origHand = [Coin Copper]
         (protoGame 
         |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
-        |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
+        |> BotHandler.GameStateUpdate.applyFirstValidAction id [Act Smithy]
         |> GameState.getPlayer id).hand 
         |> should equal origHand
 
@@ -69,7 +73,7 @@ module BotTests =
         (protoGame 
         |> GameState.withTurn {protoGame.currentTurn with actions = 0}
         |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
-        |> BotHandler.GameStateUpdate.applyFirstValid id [Act Smithy]
+        |> BotHandler.GameStateUpdate.applyFirstValidAction id [Act Smithy]
         |> GameState.getPlayer id).hand 
         |> should equal origHand
 
@@ -124,14 +128,14 @@ module GameStateTests =
                                                  afterDiscard.discard |> should equal (hand @ discard)
 
     let [<Test>] simpleDraw () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; Coin Gold]
-                                 let afterDraw = GameState.draw 5 {hand=[]; discard=[]; deck=deck; bot=[]}
+                                 let afterDraw = GameState.draw 5 {hand=[]; discard=[]; deck=deck; bot=[], []}
                                  afterDraw.hand |> Set.ofList |> should equal (Set.ofList deck)
                                  afterDraw.deck |> should equal []
 
     let [<Test>] biggerDeck () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; 
                                                 Coin Gold; Victory Estate; Coin Silver; Coin Silver]
                                  let drawAmount = 5
-                                 let afterDraw = GameState.draw drawAmount {hand=[]; discard=[]; deck=deck; bot=[]}
+                                 let afterDraw = GameState.draw drawAmount {hand=[]; discard=[]; deck=deck; bot=[], []}
                                  afterDraw.hand |> List.length |> should equal drawAmount
                                  afterDraw.hand |> Set.ofList |> should equal (deck |> List.toSeq |> Seq.take drawAmount |> Set.ofSeq)
                                  afterDraw.deck |> should equal (deck |> List.toSeq |> Seq.skip drawAmount |> Seq.toList)
@@ -139,13 +143,13 @@ module GameStateTests =
     let [<Test>] smallerThanDeck () = let deck = [Victory Estate]
                                       let discard = List.replicate 10 (Coin Copper)
                                       let drawAmount = 5
-                                      let afterDraw = GameState.draw drawAmount {hand=[]; discard=discard; deck=deck; bot=[]}
+                                      let afterDraw = GameState.draw drawAmount {hand=[]; discard=discard; deck=deck; bot=[], []}
                                       afterDraw.hand |> List.length |> should equal drawAmount
                                       afterDraw.discard |> should equal []
 
 module GameTests =
     let [<Test>] ``get initial bots`` () =
-        let bot = []
+        let bot = [], []
         (Dominion.Game.getInitialState [("Foo", bot)]).players |> List.length |> should equal 1
 
     module ScorePlayerTests =
