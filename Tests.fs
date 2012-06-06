@@ -9,6 +9,8 @@ open BotHandler
 let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [])))
 
 module ActionTests =
+    let withActionCard id card = GameState.updatePlayer id (fun player -> {player with hand = (Action card)::player.hand})
+
     let [<Test>] chapel () = let id = 0
                              let chapel = Chapel (Some (Action Smithy), Some (Coin Copper), Some (Victory Estate), None)
                              let toKeep = [Victory Province; Victory Duchy]
@@ -19,6 +21,28 @@ module ActionTests =
                              |> GameState.getPlayer id).hand
                              |> Set.ofList
                              |> should equal toKeep
+
+    let [<Test>] chancellor () = let id = 0
+                                 let deck = [Coin Copper; Coin Gold; Victory Estate]
+                                 let chancellor = Chancellor NoReshuffle
+                                 let afterAct = protoGame
+                                                    |> withActionCard id chancellor
+                                                    |> GameState.updatePlayer id (fun player -> {player with deck = deck})
+                                                    |> BotHandler.GameStateUpdate.act id chancellor
+                                 afterAct.currentTurn.purchasingPower |> should equal CHANCELLOR_PURCHASING_POWER
+                                 (GameState.getPlayer id afterAct).deck |> should equal deck
+
+    let [<Test>] ``chancellor reshuffle`` () = let id = 0
+                                               let deck = [Coin Copper; Coin Gold; Victory Estate]
+                                               let chancellor = Chancellor Reshuffle
+                                               let afterAct = protoGame
+                                                                    |> withActionCard id chancellor
+                                                                    |> GameState.updatePlayer id (fun player -> {player with deck = deck})
+                                                                    |> BotHandler.GameStateUpdate.act id chancellor
+                                               afterAct.currentTurn.purchasingPower |> should equal CHANCELLOR_PURCHASING_POWER
+                                               (GameState.getPlayer id afterAct).deck |> should equal []
+                                               (Set.ofList (GameState.getPlayer id afterAct).discard)
+                                                |> should equal (Set.ofList ((Action chancellor)::deck))
 
     let [<Test>] ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)

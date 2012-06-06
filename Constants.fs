@@ -11,6 +11,7 @@ let GARDENS_FACTOR = 10
 let CARDS_PER_HAND = 5
 
 let SMITHY_CARDS_DRAW = 3
+let CHANCELLOR_PURCHASING_POWER = 2
 
 let initialPlayer = {hand=[]; discard=[]; deck= List.replicate 7 (Coin Copper) @ List.replicate 7 (Victory Estate); bot = [], []}
 
@@ -28,7 +29,7 @@ let cardCost = function
   | Action a -> match a with
                   | Cellar -> 2
                   | Chapel _ -> 2
-                  | Chancellor -> 3 
+                  | Chancellor _ -> 3 
                   | Village -> 3
                   | Woodcutter -> 3
                   | Feast -> 4

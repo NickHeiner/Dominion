@@ -11,8 +11,8 @@
                                             && gameState.currentTurn.actions > 0
 
     module GameStateUpdate =
-        let act id actCard gameState = (ActionCards.actionOfCard actCard) id gameState 
-                                        |> GameState.withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions - 1}
+        let act id actCard gameState = GameState.withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions - 1} gameState 
+                                        |> (ActionCards.actionOfCard actCard) id
                                         |> GameState.discard (Action actCard) id
 
         let buy id card gameState = let availableMoney = GameState.totalPurchasingPower id gameState

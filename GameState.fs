@@ -24,8 +24,8 @@ let updatePlayer id (update : player -> player) gameState =
 
 let withTurn turn gameState = {gameState with currentTurn = turn}
 let addActions count gameState = withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions + count} gameState
-let addBuys count gameState = withTurn {gameState.currentTurn with actions = gameState.currentTurn.buys + count} gameState
-let addPurchasingPower amount gameState = withTurn {gameState.currentTurn with actions = gameState.currentTurn.purchasingPower + amount} gameState
+let addBuys count gameState = withTurn {gameState.currentTurn with buys = gameState.currentTurn.buys + count} gameState
+let addPurchasingPower amount gameState = withTurn {gameState.currentTurn with purchasingPower = gameState.currentTurn.purchasingPower + amount} gameState
 
 let totalPurchasingPower id gameState = 
   gameState.currentTurn.purchasingPower + List.sumBy purchasingPowerOf (List.nth gameState.players id).hand
