@@ -63,6 +63,14 @@ module ActionTests =
                                                (Set.ofList (GameState.getPlayer id afterAct).discard)
                                                 |> should equal (Set.ofList ((Action chancellor)::deck))
 
+    let [<Test>] village () = let id = 0
+                              let initialHandSize = List.length (GameState.getPlayer id protoGame).hand
+                              let afterAction = protoGame 
+                                                  |> withActionCard id Village
+                                                  |> GameStateUpdate.act id Village
+                              afterAction.currentTurn.actions |> should equal 1
+                              List.length (GameState.getPlayer id afterAction).hand |> should equal (initialHandSize + 1)
+
     let [<Test>] ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
                                        let deck = List.replicate 4 (Victory Estate)

@@ -20,4 +20,5 @@ let actionOfCard = function
                                     | Reshuffle -> GameState.updatePlayer id
                                                     (fun player -> {player with deck = []; discard = player.discard @ player.deck}) gameState
                                     | NoReshuffle -> gameState) |> GameState.addPurchasingPower CHANCELLOR_PURCHASING_POWER
+  | Village -> fun id gameState -> gameState |> GameState.addActions 1 |> GameState.drawFor 1 id
   | _ -> failwith "not impl"
