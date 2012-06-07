@@ -40,13 +40,18 @@ let drawFor count id = updatePlayer id (fun player -> draw count player)
 
 let discardAll player = {player with discard = player.hand @ player.discard; hand = [] }
 
-let removeCard getDiscard card id gameState =
+type requireCardInHand = Yes | No
+
+let removeCard getDiscard requireCard card id gameState =
     match List.tryFind ((=) card) (getPlayer id gameState).hand with
         | Some _ -> updatePlayer id
                         (fun player -> {player with hand = Utils.withoutFirst ((=) card) player.hand; discard = getDiscard card player.discard})
                         gameState
-        | None -> invalidArg "card" (sprintf "Player %d does not have card %A in hand" id card)
+        | None -> match requireCard with
+                    | Yes -> invalidArg "card" (sprintf "Player %d does not have card %A in hand" id card)
+                    | No -> gameState
 
-let discard card = removeCard (fun card discard -> card::discard) card
-let trash = removeCard (fun _ discard -> discard)
+let safeDiscard card = removeCard (fun card discard -> card::discard) No card
+let discard card = removeCard (fun card discard -> card::discard) Yes card
+let trash = removeCard (fun _ discard -> discard) Yes
     

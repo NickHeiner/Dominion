@@ -13,7 +13,7 @@
     module GameStateUpdate =
         let act id actCard gameState = GameState.withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions - 1} gameState 
                                         |> (ActionCards.actionOfCard actCard) id
-                                        |> GameState.discard (Action actCard) id
+                                        |> GameState.safeDiscard (Action actCard) id
 
         let buy id card gameState = let availableMoney = GameState.totalPurchasingPower id gameState
                                     let cost = cardCost card 

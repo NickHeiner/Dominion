@@ -10,6 +10,7 @@ let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [
 
 module ActionTests =
     let withActionCard id card = GameState.updatePlayer id (fun player -> {player with hand = (Action card)::player.hand})
+    let useAction id card = protoGame |> withActionCard id card |> GameStateUpdate.act id card
 
     let [<Test>] ``cellar no discard`` () = let id = 0
                                             let cellar = Cellar []
@@ -65,22 +66,24 @@ module ActionTests =
 
     let [<Test>] village () = let id = 0
                               let initialHandSize = List.length (GameState.getPlayer id protoGame).hand
-                              let afterAction = protoGame 
-                                                  |> withActionCard id Village
-                                                  |> GameStateUpdate.act id Village
+                              let afterAction = useAction id Village
                               afterAction.currentTurn.actions |> should equal 1
                               List.length (GameState.getPlayer id afterAction).hand |> should equal (initialHandSize + 1)
 
     let [<Test>] woodcutter () = let id = 0
-                                 let woodcutter = Woodcutter
                                  let initialPurchasingPower = protoGame.currentTurn.purchasingPower
                                  let initialBuys = protoGame.currentTurn.buys
-                                 let afterAction = protoGame
-                                                     |> withActionCard id woodcutter
-                                                     |> GameStateUpdate.act id woodcutter
+                                 let afterAction = useAction id Woodcutter
                                  afterAction.currentTurn.purchasingPower |> should equal (initialPurchasingPower + WOODCUTTER_PURCHASING_POWER)
                                  afterAction.currentTurn.buys |> should equal (initialBuys + WOODCUTTER_BUYS)
 
+    let [<Test>] feast () = let id = 0
+                            let toGain = Victory Duchy
+                            let feast = Feast toGain
+                            let player = useAction id feast |> GameState.getPlayer id
+                            player.discard |> should contain toGain
+                            Utils.allCards player |> should not' (contain feast)
+                            
     let [<Test>] ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
                                        let deck = List.replicate 4 (Victory Estate)

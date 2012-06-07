@@ -34,7 +34,7 @@ let cardCost = function
                   | Chancellor _ -> 3 
                   | Village -> 3
                   | Woodcutter -> 3
-                  | Feast -> 4
+                  | Feast _ -> 4
                   | Militia -> 4
                   | Moneylender -> 4
                   | Remodel -> 4

@@ -20,6 +20,17 @@ let actionOfCard = function
                                     | Reshuffle -> GameState.updatePlayer id
                                                     (fun player -> {player with deck = []; discard = player.discard @ player.deck}) gameState
                                     | NoReshuffle -> gameState) |> GameState.addPurchasingPower CHANCELLOR_PURCHASING_POWER
-  | Village -> fun id gameState -> gameState |> GameState.addActions 1 |> GameState.drawFor 1 id
-  | Woodcutter -> fun id gameState -> gameState |> GameState.addPurchasingPower WOODCUTTER_PURCHASING_POWER |> GameState.addBuys WOODCUTTER_BUYS 
+  | Village -> fun id gameState -> gameState
+                                        |> GameState.addActions 1
+                                        |> GameState.drawFor 1 id
+  | Woodcutter -> fun id gameState -> gameState
+                                        |> GameState.addPurchasingPower WOODCUTTER_PURCHASING_POWER
+                                        |> GameState.addBuys WOODCUTTER_BUYS 
+  | Feast toGain as feast -> if cardCost toGain > 5
+                                then invalidArg "toGain"
+                                         (sprintf "Feast can only give a card costing up to 5, but %A costs %d" toGain (cardCost toGain))
+                                else fun id gameState -> gameState
+                                                            |> GameState.trash (Action feast) id
+                                                            |> GameState.updatePlayer id (fun player ->
+                                                                {player with discard = toGain::player.discard})
   | _ -> failwith "not impl"
