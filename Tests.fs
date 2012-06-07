@@ -57,7 +57,7 @@ module ActionTests =
                                                let afterAct = protoGame
                                                                     |> withActionCard id chancellor
                                                                     |> GameState.updatePlayer id (fun player -> {player with deck = deck})
-                                                                    |> BotHandler.GameStateUpdate.act id chancellor
+                                                                    |> GameStateUpdate.act id chancellor
                                                afterAct.currentTurn.purchasingPower |> should equal CHANCELLOR_PURCHASING_POWER
                                                (GameState.getPlayer id afterAct).deck |> should equal []
                                                (Set.ofList (GameState.getPlayer id afterAct).discard)
@@ -70,6 +70,16 @@ module ActionTests =
                                                   |> GameStateUpdate.act id Village
                               afterAction.currentTurn.actions |> should equal 1
                               List.length (GameState.getPlayer id afterAction).hand |> should equal (initialHandSize + 1)
+
+    let [<Test>] woodcutter () = let id = 0
+                                 let woodcutter = Woodcutter
+                                 let initialPurchasingPower = protoGame.currentTurn.purchasingPower
+                                 let initialBuys = protoGame.currentTurn.buys
+                                 let afterAction = protoGame
+                                                     |> withActionCard id woodcutter
+                                                     |> GameStateUpdate.act id woodcutter
+                                 afterAction.currentTurn.purchasingPower |> should equal (initialPurchasingPower + WOODCUTTER_PURCHASING_POWER)
+                                 afterAction.currentTurn.buys |> should equal (initialBuys + WOODCUTTER_BUYS)
 
     let [<Test>] ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
