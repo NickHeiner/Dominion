@@ -40,4 +40,10 @@ let actionOfCard = function
                                                                                    let hand = Utils.withoutNone [card1; card2; card3]
                                                                                    {player with hand = hand}) game)
                                         gameState *)
+  | Moneylender -> fun id gameState -> if not (Utils.listMem (GameState.getPlayer id gameState).hand (Coin Copper))
+                                       then gameState
+                                       else gameState
+                                                |> GameState.updatePlayer id
+                                                    (fun player -> {player with hand = Utils.withoutFirst ((=) (Coin Copper)) player.hand})
+                                                |> GameState.addPurchasingPower MONEYLENDER_PURCHASING_POWER
   | _ -> failwith "not impl"

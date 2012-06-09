@@ -9,7 +9,8 @@ open BotHandler
 let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [])))
 
 module ActionTests =
-    let withActionCard id card = GameState.updatePlayer id (fun player -> {player with hand = (Action card)::player.hand})
+    let withCard id card = GameState.updatePlayer id (fun player -> {player with hand = card::player.hand})
+    let withActionCard id card = withCard id (Action card)
     let useAction id card = protoGame |> withActionCard id card |> GameStateUpdate.act id card
 
     let [<Test>] ``cellar no discard`` () = let id = 0
@@ -90,6 +91,30 @@ module ActionTests =
                               | hd::tl -> List.length hd.hand |> should equal initialHandSize
                                           List.iter (fun player -> List.length player.hand |> should equal MILITIA_DRAW_DOWN_COUNT) tl
                               | [] -> failwith "players should be a non-empty list"
+                              
+    let [<Test>] ``moneylender trash copper`` () = let id = 1
+                                                   let countCoppers game = Utils.countOccurences (GameState.getPlayer id game).hand (Coin Copper)
+                                                   let initialCopperCount = countCoppers protoGame + 1
+                                                   let afterAction = (protoGame 
+                                                                        |> withCard id (Coin Copper)
+                                                                        |> withActionCard id Moneylender
+                                                                        |> GameStateUpdate.act id Moneylender)
+                                                   countCoppers afterAction |> should equal (initialCopperCount - 1)
+                               
+    let [<Test>] ``moneylender purchasing power`` () = let id = 1
+                                                       let initialPurchasingPower = protoGame.currentTurn.purchasingPower
+                                                       let afterAction = (protoGame 
+                                                                                |> withCard id (Coin Copper)
+                                                                                |> withActionCard id Moneylender
+                                                                                |> GameStateUpdate.act id Moneylender)
+                                                       afterAction.currentTurn.purchasingPower
+                                                        |> should equal (initialPurchasingPower + MONEYLENDER_PURCHASING_POWER)
+                               
+    let [<Test>] ``moneylender no copper`` () = let id = 1
+                                                let initialPurchasingPower = protoGame.currentTurn.purchasingPower
+                                                let afterAction = useAction id Moneylender
+                                                afterAction.currentTurn.purchasingPower
+                                                        |> should equal (initialPurchasingPower)
 
     let [<Test>] ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
