@@ -33,4 +33,11 @@ let actionOfCard = function
                                                             |> GameState.trash (Action feast) id
                                                             |> GameState.updatePlayer id (fun player ->
                                                                 {player with discard = toGain::player.discard})
+  (* | Militia -> fun id gameState -> { 0 .. List.length gameState.players} 
+                                    |> Seq.filter (fun x -> x <> id)
+                                    |> Seq.fold (fun game id -> GameState.updatePlayer id
+                                                                    (fun player -> let card1, card2, card3 = player.militiaReaction player.hand
+                                                                                   let hand = Utils.withoutNone [card1; card2; card3]
+                                                                                   {player with hand = hand}) game)
+                                        gameState *)
   | _ -> failwith "not impl"

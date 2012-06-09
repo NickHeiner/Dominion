@@ -84,6 +84,13 @@ module ActionTests =
                             player.discard |> should contain toGain
                             Utils.allCards player |> should not' (contain feast)
                             
+    let [<Test>] militia () = let id = 0
+                              let initialHandSize = List.length (GameState.getPlayer id protoGame).hand
+                              match (useAction id Militia).players with
+                              | hd::tl -> List.length hd.hand |> should equal initialHandSize
+                                          List.iter (fun player -> List.length player.hand |> should equal MILITIA_DRAW_DOWN_COUNT) tl
+                              | [] -> failwith "players should be a non-empty list"
+
     let [<Test>] ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
                                        let deck = List.replicate 4 (Victory Estate)
@@ -202,14 +209,14 @@ module GameStateTests =
                                                  afterDiscard.discard |> should equal (hand @ discard)
 
     let [<Test>] simpleDraw () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; Coin Gold]
-                                 let afterDraw = GameState.draw 5 {hand=[]; discard=[]; deck=deck; bot=[], []}
+                                 let afterDraw = GameState.draw 5 {initialPlayer with deck = deck}
                                  afterDraw.hand |> Set.ofList |> should equal (Set.ofList deck)
                                  afterDraw.deck |> should equal []
 
     let [<Test>] biggerDeck () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; 
                                                 Coin Gold; Victory Estate; Coin Silver; Coin Silver]
                                  let drawAmount = 5
-                                 let afterDraw = GameState.draw drawAmount {hand=[]; discard=[]; deck=deck; bot=[], []}
+                                 let afterDraw = GameState.draw drawAmount {initialPlayer with deck = deck}
                                  afterDraw.hand |> List.length |> should equal drawAmount
                                  afterDraw.hand |> Set.ofList |> should equal (deck |> List.toSeq |> Seq.take drawAmount |> Set.ofSeq)
                                  afterDraw.deck |> should equal (deck |> List.toSeq |> Seq.skip drawAmount |> Seq.toList)
@@ -217,7 +224,7 @@ module GameStateTests =
     let [<Test>] smallerThanDeck () = let deck = [Victory Estate]
                                       let discard = List.replicate 10 (Coin Copper)
                                       let drawAmount = 5
-                                      let afterDraw = GameState.draw drawAmount {hand=[]; discard=discard; deck=deck; bot=[], []}
+                                      let afterDraw = GameState.draw drawAmount {initialPlayer with deck = deck; discard = discard}
                                       afterDraw.hand |> List.length |> should equal drawAmount
                                       afterDraw.discard |> should equal []
 

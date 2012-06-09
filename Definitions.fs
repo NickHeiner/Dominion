@@ -18,7 +18,8 @@ type buy = Buy of card
 
 type gameState = {players : player list; cards : Map<card, int>; trash : card list; currentTurn : turn; turnsTaken : int}
 and bot = act list * buy list
-and player = {hand : card list; deck : card list; discard : card list; bot : bot}
+and player = {hand : card list; deck : card list; discard : card list; bot : bot;
+                (* militiaReaction : card list -> (card option * card option * card option) *)}
 
 (* this there a better way to enumerate over all members of the type? *)
 (* http://stackoverflow.com/questions/10867544/map-over-all-values-in-a-discriminated-union *)
