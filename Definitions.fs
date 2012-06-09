@@ -5,8 +5,8 @@ type reshuffle = Reshuffle | NoReshuffle
 type VictCard = Province | Duchy | Estate | Gardens | Curse
 type CoinCard = Gold | Silver | Copper 
 type ActCard = Cellar of card list | Chapel of (card option * card option* card option* card option) 
-                | Chancellor of reshuffle | Village | Woodcutter | Feast of card | Militia | Moneylender | Remodel | Smithy 
-                | Spy | Thief | ThroneRoom | CouncilRoom | Festival | Laboratory | Library | Market | Mine | Witch | Adventurer
+                | Chancellor of reshuffle | Village | Woodcutter | Feast of card | Militia | Moneylender | Remodel of (card * card) 
+                | Smithy | Spy | Thief | ThroneRoom | CouncilRoom | Festival | Laboratory | Library | Market | Mine | Witch | Adventurer
 
 and card = Victory of VictCard | Coin of CoinCard | Action of ActCard
 

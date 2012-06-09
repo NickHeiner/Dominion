@@ -54,4 +54,6 @@ let removeCard getDiscard requireCard card id gameState =
 let safeDiscard card = removeCard (fun card discard -> card::discard) No card
 let discard card = removeCard (fun card discard -> card::discard) Yes card
 let trash = removeCard (fun _ discard -> discard) Yes
+
+let gainCard card id = updatePlayer id (fun player -> {player with discard = card::player.discard})
     

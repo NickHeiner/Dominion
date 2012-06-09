@@ -12,6 +12,7 @@ module ActionTests =
     let withCard id card = GameState.updatePlayer id (fun player -> {player with hand = card::player.hand})
     let withActionCard id card = withCard id (Action card)
     let useAction id card = protoGame |> withActionCard id card |> GameStateUpdate.act id card
+    let countCards id game card = Utils.countOccurences (GameState.getPlayer id game).hand card
 
     let [<Test>] ``cellar no discard`` () = let id = 0
                                             let cellar = Cellar []
@@ -93,13 +94,12 @@ module ActionTests =
                               | [] -> failwith "players should be a non-empty list"
                               
     let [<Test>] ``moneylender trash copper`` () = let id = 1
-                                                   let countCoppers game = Utils.countOccurences (GameState.getPlayer id game).hand (Coin Copper)
-                                                   let initialCopperCount = countCoppers protoGame + 1
+                                                   let initialCopperCount = countCards id protoGame (Coin Copper) + 1
                                                    let afterAction = (protoGame 
                                                                         |> withCard id (Coin Copper)
                                                                         |> withActionCard id Moneylender
                                                                         |> GameStateUpdate.act id Moneylender)
-                                                   countCoppers afterAction |> should equal (initialCopperCount - 1)
+                                                   countCards id afterAction (Coin Copper) |> should equal (initialCopperCount - 1)
                                
     let [<Test>] ``moneylender purchasing power`` () = let id = 1
                                                        let initialPurchasingPower = protoGame.currentTurn.purchasingPower
@@ -115,6 +115,41 @@ module ActionTests =
                                                 let afterAction = useAction id Moneylender
                                                 afterAction.currentTurn.purchasingPower
                                                         |> should equal (initialPurchasingPower)
+
+    let [<Test>] remodel () = let id = 1
+                              let toRemodel = Victory Estate
+                              let toGain = Action Militia
+                              let remodel = Remodel (toRemodel, toGain)
+                              let initialToRemodelCount = countCards id protoGame toRemodel + 1
+                              let afterAction = protoGame
+                                                  |> withCard id toRemodel
+                                                  |> GameStateUpdate.act id remodel
+                              countCards id afterAction toRemodel |> should equal (initialToRemodelCount - 1)
+                              (GameState.getPlayer id afterAction).discard |> should contain toGain
+                              
+    let [<Test>] ``remodel don't have card to remodel`` () = let id = 1
+                                                             let toRemodel = Victory Curse
+                                                             let toGain = Victory Estate
+                                                             let remodel = Remodel (toRemodel, toGain)
+                                                             let afterAction = protoGame
+                                                                                |> GameState.updatePlayer id   
+                                                                                    (fun player -> 
+                                                                                        {player with hand = List.filter ((<>) toRemodel)
+                                                                                                                player.hand})
+                                                                                |> GameStateUpdate.act id remodel
+                                                                                |> GameState.getPlayer id
+                                                             afterAction.discard |> should not' (contain toGain)
+
+    let [<Test>] ``remodel toGain to expensive`` () = let id = 1
+                                                      let toRemodel = Victory Curse
+                                                      let toGain = Action Adventurer
+                                                      let remodel = Remodel (toRemodel, toGain)
+                                                      let afterAction = protoGame
+                                                                        |> withCard id toRemodel
+                                                                        |> GameStateUpdate.act id remodel 
+                                                                        |> GameState.getPlayer id
+                                                      afterAction.hand |> should contain toRemodel
+                                                      afterAction.discard |> should not' (contain toGain)
 
     let [<Test>] ``smithy test`` () =  let id = 0
                                        let hand = List.replicate 5 (Coin Copper)
