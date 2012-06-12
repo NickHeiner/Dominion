@@ -70,4 +70,8 @@ let rec actionOfCard = function
                                               let action = (actionOfCard act) id
                                               gameState |> action |> action
                                               |> GameState.discard (Action act) id
+  | CouncilRoom -> fun aId gameState -> gameState
+                                        |> GameState.drawFor COUNCIL_ROOM_SELF_DRAW_COUNT aId
+                                        |> Seq.fold (fun game pId -> GameState.drawFor COUNCIL_ROOM_OTHER_DRAW_COUNT pId game)
+                                        <| (GameState.getIdRange gameState |> Seq.filter ((<>) aId))
   | _ -> failwith "not impl"

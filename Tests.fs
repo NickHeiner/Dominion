@@ -219,6 +219,26 @@ module ActionTests =
         |> GameState.getPlayer actorId).hand
         |> memberEquals hand
 
+    let [<Test>] councilRoom () =
+        let actorId = 2
+        let hand = List.replicate 5 (Coin Silver)
+        let deck = List.replicate 12 (Victory Curse)
+        (GameState.getIdRange protoGame
+        |> Seq.fold (fun game pId -> GameState.updatePlayer pId (fun player -> {player with hand = hand; deck = deck}) game) protoGame
+        |> withActionCard actorId CouncilRoom
+        |> GameStateUpdate.act actorId CouncilRoom).players
+        |> List.map (fun player -> player.hand)
+        |> Utils.withIndices
+        |> List.iter (fun (pId, newHand) -> if pId = actorId
+                                             then memberEquals newHand <| hand @ (deck
+                                                                            |> List.toSeq
+                                                                            |> Seq.take COUNCIL_ROOM_SELF_DRAW_COUNT
+                                                                            |> Seq.toList)
+                                             else memberEquals newHand <| hand @ (deck
+                                                                            |> List.toSeq
+                                                                            |> Seq.take COUNCIL_ROOM_OTHER_DRAW_COUNT
+                                                                            |> Seq.toList))
+
 module BotTests =
     let buy toBuy hand game = 
         let id = 0

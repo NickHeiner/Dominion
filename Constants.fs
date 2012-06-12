@@ -16,6 +16,8 @@ let WOODCUTTER_PURCHASING_POWER = 2
 let WOODCUTTER_BUYS = 1
 let MILITIA_DRAW_DOWN_COUNT = 3
 let MONEYLENDER_PURCHASING_POWER = 3
+let COUNCIL_ROOM_SELF_DRAW_COUNT = 4
+let COUNCIL_ROOM_OTHER_DRAW_COUNT = 1
 
 let initialPlayer = {hand=[]; discard=[]; deck = List.replicate 7 (Coin Copper) @ List.replicate 3 (Victory Estate); bot = [], []; militiaReaction = fun _ -> (None, None, None)}
 
