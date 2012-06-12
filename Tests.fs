@@ -247,6 +247,17 @@ module ActionTests =
         afterTurn.purchasingPower |> should equal <| initialTurn.purchasingPower + FESTIVAL_PURCHASE_POWER
         afterTurn.buys |> should equal <| initialTurn.buys + FESTIVAL_BUYS
 
+    let [<Test>] laboratory () =
+        let aId = 0
+        let deckCard = Victory Duchy
+        let hand = List.replicate 5 (Coin Gold)
+        let deck = List.replicate 4 deckCard
+        let afterAction = (protoGame
+                            |> GameState.updatePlayer aId (fun player -> {player with hand = (Action Laboratory)::hand; deck = deck})
+                            |> GameStateUpdate.act aId Laboratory)
+        (GameState.getPlayer aId afterAction).hand |> memberEquals <| hand @ (List.replicate LAB_DRAW_COUNT deckCard)
+        afterAction.currentTurn.actions |> should equal <| protoGame.currentTurn.actions + LAB_ACTIONS - 1 (* -1 for use of lab *)
+
 module BotTests =
     let buy toBuy hand game = 
         let id = 0

@@ -21,6 +21,8 @@ let COUNCIL_ROOM_OTHER_DRAW_COUNT = 1
 let FESTIVAL_ACTIONS = 2
 let FESTIVAL_PURCHASE_POWER = 2
 let FESTIVAL_BUYS = 1
+let LAB_DRAW_COUNT = 2
+let LAB_ACTIONS = 1
 
 let initialPlayer = {hand=[]; discard=[]; deck = List.replicate 7 (Coin Copper) @ List.replicate 3 (Victory Estate); bot = [], []; militiaReaction = fun _ -> (None, None, None)}
 
