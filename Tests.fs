@@ -128,7 +128,6 @@ module ActionTests =
         |> GameStateUpdate.act actorId Militia
         |> GameState.getPlayer targetId).hand
         |> should equal (List.replicate MILITIA_DRAW_DOWN_COUNT militiaInitialCard)
-                                                      
 
     let [<Test>] ``moneylender trash copper`` () = let id = 1
                                                    let initialCopperCount = countCards id protoGame (Coin Copper) + 1
@@ -197,6 +196,28 @@ module ActionTests =
                                        |> GameState.getPlayer id).hand
                                        |> Set.ofList
                                        |> should equal ((hand @ (List.toSeq deck |> Seq.take SMITHY_CARDS_DRAW |> Seq.toList)) |> Set.ofList)
+
+    (* let [<Test>] spy () = *)
+
+    let [<Test>] throneRoom () = 
+        let actorId = 1
+        let hand = List.replicate 5 (Coin Copper)
+        let deck = List.replicate 12 (Victory Estate)
+        (protoGame
+        |> GameState.updatePlayer actorId (fun player -> {player with hand = (Action <| ThroneRoom Smithy)::(Action Smithy)::hand; deck = deck})
+        |> BotHandler.GameStateUpdate.act actorId (ThroneRoom Smithy)
+        |> GameState.getPlayer actorId).hand
+        |> memberEquals <| (hand @ (List.toSeq deck |> Seq.take (SMITHY_CARDS_DRAW * 2) |> Seq.toList))
+        
+    let [<Test>] ``throneRoom doesn't have card`` () = 
+        let actorId = 1
+        let hand = List.replicate 5 (Coin Copper)
+        let deck = List.replicate 12 (Victory Estate)
+        (protoGame
+        |> GameState.updatePlayer actorId (fun player -> {player with hand = (Action <| ThroneRoom Smithy)::hand; deck = deck})
+        |> BotHandler.GameStateUpdate.act actorId (ThroneRoom Smithy)
+        |> GameState.getPlayer actorId).hand
+        |> memberEquals hand
 
 module BotTests =
     let buy toBuy hand game = 

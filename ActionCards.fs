@@ -5,7 +5,11 @@ open Constants
 
 type action = int -> gameState -> gameState
 
-let actionOfCard = function
+(* Maybe validation should be separated out from the actual action logic.
+   One advantage of not separating it out is that it's easier to be more generous with fall-back behavior, 
+   instead of just flatly rejecting ill-formed actions. *)
+(* there are many edge cases that this probably doesn't have correct behavior for *)
+let rec actionOfCard = function
   | Smithy -> fun id gameState -> GameState.updatePlayer id (GameState.draw SMITHY_CARDS_DRAW) gameState
   | Cellar toDiscard -> fun id gameState -> List.fold (fun gameState card -> gameState
                                                                                 |> GameState.discard card id
@@ -60,4 +64,10 @@ let actionOfCard = function
                                                        then gameState
                                                        else GameState.trash toRemodel id gameState
                                                             |> GameState.gainCard toGain id 
+  | ThroneRoom act -> fun id gameState -> if (GameState.getPlayer id gameState).hand |> Utils.contains (Action act) |> not
+                                          then gameState
+                                          else (* TODO if act itself is a ThroneRoom, you're not allowed to play one card 4 times. *)
+                                              let action = (actionOfCard act) id
+                                              gameState |> action |> action
+                                              |> GameState.discard (Action act) id
   | _ -> failwith "not impl"

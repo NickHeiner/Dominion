@@ -43,7 +43,7 @@ let cardCost = function
                   | Smithy -> 4 
                   | Spy -> 4
                   | Thief -> 4
-                  | ThroneRoom -> 4
+                  | ThroneRoom _ -> 4
                   | CouncilRoom -> 5
                   | Festival -> 5
                   | Laboratory -> 5
