@@ -6,16 +6,10 @@ open Constants
 (* This would be defined in Constants if not for mutual recursion issues *)
 let initialTurn = {actions = 1; buys = 1; purchasingPower = 0}  
 
-(* Universally publicly visible state *)
-type sanitized = {discard : card list list; cards : Map<card, int>; trash: card list}
-
 let initialGameState = {players = []; cards = List.fold (fun acc el -> Map.add el (initialCount el) acc) Map.empty allCards; 
                         trash = []; currentTurn = initialTurn; turnsTaken = 0 }
 
 let nextTurn gameState = {gameState with currentTurn = initialTurn; turnsTaken = gameState.turnsTaken + 1}
-
-let sanitize gameState = {discard = List.map (fun (player : player) -> player.discard) gameState.players;
-                            cards = gameState.cards; trash = gameState.trash}
 
 let getPlayer id gameState = List.nth gameState.players id
                             
@@ -56,4 +50,6 @@ let discard card = removeCard (fun card discard -> card::discard) Yes card
 let trash = removeCard (fun _ discard -> discard) Yes
 
 let gainCard card id = updatePlayer id (fun player -> {player with discard = card::player.discard})
+
+let getIdRange gameState = { 0 .. List.length gameState.players - 1}
     

@@ -8,6 +8,8 @@ open BotHandler
 
 let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [])))
 
+let memberEquals items1 items2 = List.sort items1 |> should equal <| List.sort items2
+
 module ActionTests =
     let withCard id card = GameState.updatePlayer id (fun player -> {player with hand = card::player.hand})
     let withActionCard id card = withCard id (Action card)
@@ -86,13 +88,48 @@ module ActionTests =
                             player.discard |> should contain toGain
                             Utils.allCards player |> should not' (contain feast)
                             
-    let [<Test>] militia () = let id = 0
-                              let initialHandSize = List.length (GameState.getPlayer id protoGame).hand
-                              match (useAction id Militia).players with
-                              | hd::tl -> List.length hd.hand |> should equal initialHandSize
-                                          List.iter (fun player -> List.length player.hand |> should equal MILITIA_DRAW_DOWN_COUNT) tl
-                              | [] -> failwith "players should be a non-empty list"
-                              
+    let militiaInitialCard = Coin Copper
+    let militiaGame = GameState.getIdRange protoGame 
+                        |> Seq.fold (fun game playerId -> GameState.updatePlayer playerId 
+                                                            (fun player -> {player with hand = List.replicate (MILITIA_DRAW_DOWN_COUNT + 2)
+                                                                                                militiaInitialCard})
+                                                           game) protoGame
+
+    let [<Test>] ``militia default reaction`` () = let actorId = 0
+                                                   let initialHandSize = List.length (GameState.getPlayer actorId militiaGame).hand
+                                                   let afterAction = militiaGame
+                                                                        |> withActionCard actorId Militia
+                                                                        |> GameStateUpdate.act actorId Militia
+                                                   match afterAction.players with
+                                                   | hd::tl -> List.length hd.hand |> should equal initialHandSize
+                                                               List.iter
+                                                                (fun player -> List.length player.hand
+                                                                               |> should equal MILITIA_DRAW_DOWN_COUNT) tl
+                                                   | [] -> failwith "players should be a non-empty list"
+                                                   
+    let [<Test>] ``militia too few cards returned`` () = 
+        let actorId = 0
+        let targetId = 1
+        (militiaGame 
+        |> GameState.updatePlayer targetId
+            (fun player -> {player with militiaReaction = (fun _ -> (Some <| militiaInitialCard, None, None))})
+        |> withActionCard actorId Militia
+        |> GameStateUpdate.act actorId Militia
+        |> GameState.getPlayer targetId).hand
+        |> should equal (List.replicate MILITIA_DRAW_DOWN_COUNT militiaInitialCard)
+
+    let [<Test>] ``militia illegal cards returned`` () =
+        let actorId = 0
+        let targetId = 1
+        (militiaGame 
+        |> GameState.updatePlayer targetId
+            (fun player -> {player with militiaReaction = (fun _ -> (Some (Victory Province), Some (Victory Province), Some (Victory Province)))})
+        |> withActionCard actorId Militia
+        |> GameStateUpdate.act actorId Militia
+        |> GameState.getPlayer targetId).hand
+        |> should equal (List.replicate MILITIA_DRAW_DOWN_COUNT militiaInitialCard)
+                                                      
+
     let [<Test>] ``moneylender trash copper`` () = let id = 1
                                                    let initialCopperCount = countCards id protoGame (Coin Copper) + 1
                                                    let afterAction = (protoGame 
@@ -247,6 +284,20 @@ module UtilTests =
     let [<Test>] negIndex () = (fun () -> Utils.withNth [5; 3; 2] -1 6 |> ignore) |> should throw typeof<System.ArgumentException>
     let [<Test>] tooBigIndex () = (fun () -> Utils.withNth [5; 3; 2] 100 46 |> ignore) |> should throw typeof<System.ArgumentException>
     let [<Test>] lastIndex () = Utils.withNth ["foo"; "bar"; "Baz"] 2 "grumbles" |> should equal ["foo"; "bar"; "grumbles"]
+    let [<Test>] fillHand () = let source = {0 .. 10}
+                               Utils.fillHand (List.ofSeq source) [] |> memberEquals (Seq.take 3 source |> List.ofSeq)
+    let [<Test>] ``fillHand smaller source`` () = let source = {0 .. 2}
+                                                  Utils.fillHand (List.ofSeq source) [] |> memberEquals (List.ofSeq source)
+    let [<Test>] ``fillHand overlap`` () = let source = [0; 1; 2; 3; 4]
+                                           [0] |> Utils.fillHand source |> memberEquals [0; 1; 2]
+    let [<Test>] ``fillHand already full`` () = let source = [0; 1; 2; 3; 4; 5]
+                                                let newHand = [3; 5; 4]
+                                                Utils.fillHand source newHand |> memberEquals newHand
+
+    let [<Test>] ensureSubset () = Utils.ensureSubset [0; 0; 0] [1; 2; 3] |> memberEquals []
+    let [<Test>] ``ensureSubset multiple copies`` () = Utils.ensureSubset [0; 0; 4; 5] [1; 0; 1; 0; 0; 0] |> memberEquals [0; 0]
+    let [<Test>] ``ensureSubset same`` () = let items = [4; 6; 2; 34; 1]
+                                            Utils.ensureSubset items items |> memberEquals items
     
 module GameStateTests =
     let [<Test>] discard () = let id = 0

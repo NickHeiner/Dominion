@@ -38,4 +38,34 @@ let contains item list =
         | None -> false
 
 let withoutNone items = List.fold (fun list -> function Some el -> el::list | None -> list) [] items |> List.rev
-        
+
+let memCount items = items |> Seq.countBy id |> Map.ofSeq
+
+let ensureSubset super sub = 
+    List.fold (fun (subAcc, superAcc) subEl -> if contains subEl superAcc
+                                                then (subAcc, withoutFirst ((=) subEl) superAcc)
+                                                else (withoutFirst ((=) subEl) subAcc, superAcc)) (sub, super) sub
+    |> fst
+
+let fillHand src dest =
+    let disjointSrc = List.fold (fun acc el -> withoutFirst ((=) el) acc) src dest
+    let rec helper src dest =
+        if List.length dest >= Constants.MILITIA_DRAW_DOWN_COUNT
+        then dest 
+        else
+            match src with
+            | [] -> dest
+            | hd::tl -> helper tl (hd::dest)
+    helper disjointSrc dest
+
+    (*
+let rec fillHand origHand newHand = 
+    match newHand with
+    | card1::card2::card3::[] as hand -> hand
+    | items -> match origHand with
+               | [] -> items
+               | hd::tl -> let origHeadCount = memCount origHand |> Map.find hd
+                           match memCount newHand |> Map.tryFind hd with
+                           | Some count when count + 1 <= origHeadCount -> fillHand (hd::items) tl
+                           | None -> fillHand (hd::items) tl
+                           | _ -> fillHand items tl        *)

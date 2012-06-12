@@ -17,7 +17,7 @@ let WOODCUTTER_BUYS = 1
 let MILITIA_DRAW_DOWN_COUNT = 3
 let MONEYLENDER_PURCHASING_POWER = 3
 
-let initialPlayer = {hand=[]; discard=[]; deck= List.replicate 7 (Coin Copper) @ List.replicate 3 (Victory Estate); bot = [], []; (* militiaReaction = fun _ -> (None, None, None) *)}
+let initialPlayer = {hand=[]; discard=[]; deck = List.replicate 7 (Coin Copper) @ List.replicate 3 (Victory Estate); bot = [], []; militiaReaction = fun _ -> (None, None, None)}
 
 let cardCost = function
   | Victory v -> match v with 

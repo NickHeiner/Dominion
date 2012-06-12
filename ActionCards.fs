@@ -38,13 +38,15 @@ let actionOfCard = function
                                                             |> GameState.trash (Action feast) id
                                                             |> GameState.gainCard toGain id
 
-  (* | Militia -> fun id gameState -> { 0 .. List.length gameState.players} 
+  | Militia -> fun id gameState -> GameState.getIdRange gameState
                                     |> Seq.filter (fun x -> x <> id)
                                     |> Seq.fold (fun game id -> GameState.updatePlayer id
                                                                     (fun player -> let card1, card2, card3 = player.militiaReaction player.hand
-                                                                                   let hand = Utils.withoutNone [card1; card2; card3]
-                                                                                   {player with hand = hand}) game)
-                                        gameState *)
+                                                                                   let drawnDownHand = Utils.withoutNone [card1; card2; card3]
+                                                                                                       |> Utils.ensureSubset player.hand
+                                                                                                       |> Utils.fillHand player.hand
+                                                                                   {player with hand = drawnDownHand}) game)
+                                        gameState
   
   | Moneylender -> fun id gameState -> if not (Utils.listMem (GameState.getPlayer id gameState).hand (Coin Copper))
                                        then gameState
