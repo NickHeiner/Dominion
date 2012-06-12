@@ -239,6 +239,14 @@ module ActionTests =
                                                                             |> Seq.take COUNCIL_ROOM_OTHER_DRAW_COUNT
                                                                             |> Seq.toList))
 
+    let [<Test>] festival () =
+        let aId = 1
+        let initialTurn = protoGame.currentTurn
+        let afterTurn = (useAction aId Festival).currentTurn
+        afterTurn.actions |> should equal <| initialTurn.actions + FESTIVAL_ACTIONS - 1 (* -1 for use of festival *)
+        afterTurn.purchasingPower |> should equal <| initialTurn.purchasingPower + FESTIVAL_PURCHASE_POWER
+        afterTurn.buys |> should equal <| initialTurn.buys + FESTIVAL_BUYS
+
 module BotTests =
     let buy toBuy hand game = 
         let id = 0

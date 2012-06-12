@@ -74,4 +74,8 @@ let rec actionOfCard = function
                                         |> GameState.drawFor COUNCIL_ROOM_SELF_DRAW_COUNT aId
                                         |> Seq.fold (fun game pId -> GameState.drawFor COUNCIL_ROOM_OTHER_DRAW_COUNT pId game)
                                         <| (GameState.getIdRange gameState |> Seq.filter ((<>) aId))
+  | Festival -> fun aId gameState -> gameState
+                                        |> GameState.addActions FESTIVAL_ACTIONS
+                                        |> GameState.addBuys FESTIVAL_BUYS
+                                        |> GameState.addPurchasingPower FESTIVAL_PURCHASE_POWER
   | _ -> failwith "not impl"
