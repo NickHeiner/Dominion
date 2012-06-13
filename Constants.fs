@@ -18,6 +18,7 @@ let MILITIA_DRAW_DOWN_COUNT = 3
 let MONEYLENDER_PURCHASING_POWER = 3
 let COUNCIL_ROOM_SELF_DRAW_COUNT = 4
 let COUNCIL_ROOM_OTHER_DRAW_COUNT = 1
+let COUNCIL_ROOM_BUYS = 1
 let FESTIVAL_ACTIONS = 2
 let FESTIVAL_PURCHASE_POWER = 2
 let FESTIVAL_BUYS = 1
@@ -76,6 +77,7 @@ let victoryPointsFor = function
                    | Gardens -> 0
   | _ -> 0
 
+(* Note: only a set of actions should have initial count 10; the rest have initial count 0 *)
 let initialCount = function
   | Victory v -> match v with
                   | Province -> 12 

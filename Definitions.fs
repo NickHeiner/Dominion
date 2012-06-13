@@ -5,16 +5,19 @@ type reshuffle = Reshuffle | NoReshuffle
 type VictCard = Province | Duchy | Estate | Gardens | Curse
 type CoinCard = Gold | Silver | Copper 
 
-(* [<CustomEquality; NoComparisonAttribute>] *)
+(*
+[<CustomEquality; NoComparison>]
+type spyFunc = 
+  SpyFunc of (card -> bool * card -> bool) 
+      override x.Equals(y) = (match y with :? spyFunc -> true | _ -> false)
+      override x.GetHashCode() = 0
+      *)
 type ActCard = Cellar of card list | Chapel of (card option * card option* card option* card option) 
                 | Chancellor of reshuffle | Village | Woodcutter | Feast of card | Militia | Moneylender | Remodel of (card * card) 
-                | Smithy | Spy (* of (card -> bool * card -> bool) *) | Thief | ThroneRoom of ActCard 
+                | Smithy | Spy (* of spyFunc *) | Thief | ThroneRoom of ActCard 
                 | CouncilRoom | Festival | Laboratory | Library | Market
                 | Mine | Witch | Adventurer
-                (*
-                override x.Equals(yobj) =
-                    match yobj with
-                    *)
+
 and card = Victory of VictCard | Coin of CoinCard | Action of ActCard
 
 (* Turn for a player. purchasingPower doesn't include coins. *)

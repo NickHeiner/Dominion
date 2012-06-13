@@ -71,6 +71,7 @@ let rec actionOfCard = function
                                               gameState |> action |> action
                                               |> GameState.discard (Action act) id
   | CouncilRoom -> fun aId gameState -> gameState
+                                        |> GameState.addBuys COUNCIL_ROOM_BUYS
                                         |> GameState.drawFor COUNCIL_ROOM_SELF_DRAW_COUNT aId
                                         |> Seq.fold (fun game pId -> GameState.drawFor COUNCIL_ROOM_OTHER_DRAW_COUNT pId game)
                                         <| (GameState.getIdRange gameState |> Seq.filter ((<>) aId))

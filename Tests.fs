@@ -223,10 +223,13 @@ module ActionTests =
         let actorId = 2
         let hand = List.replicate 5 (Coin Silver)
         let deck = List.replicate 12 (Victory Curse)
-        (GameState.getIdRange protoGame
-        |> Seq.fold (fun game pId -> GameState.updatePlayer pId (fun player -> {player with hand = hand; deck = deck}) game) protoGame
-        |> withActionCard actorId CouncilRoom
-        |> GameStateUpdate.act actorId CouncilRoom).players
+        let afterAction =
+            GameState.getIdRange protoGame
+            |> Seq.fold (fun game pId -> GameState.updatePlayer pId (fun player -> {player with hand = hand; deck = deck}) game) protoGame
+            |> withActionCard actorId CouncilRoom
+            |> GameStateUpdate.act actorId CouncilRoom
+        afterAction.currentTurn.buys |> should equal <| protoGame.currentTurn.buys + COUNCIL_ROOM_BUYS
+        afterAction.players
         |> List.map (fun player -> player.hand)
         |> Utils.withIndices
         |> List.iter (fun (pId, newHand) -> if pId = actorId
