@@ -24,6 +24,10 @@ let FESTIVAL_PURCHASE_POWER = 2
 let FESTIVAL_BUYS = 1
 let LAB_DRAW_COUNT = 2
 let LAB_ACTIONS = 1
+let MARKET_ACTIONS = 1
+let MARKET_CARDS = 1
+let MARKET_BUYS = 1
+let MARKET_PURCHASING_POWER = 1
 
 let initialPlayer = {hand=[]; discard=[]; deck = List.replicate 7 (Coin Copper) @ List.replicate 3 (Victory Estate); bot = [], []; militiaReaction = fun _ -> (None, None, None)}
 

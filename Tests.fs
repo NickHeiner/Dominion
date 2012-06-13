@@ -261,6 +261,16 @@ module ActionTests =
         (GameState.getPlayer aId afterAction).hand |> memberEquals <| hand @ (List.replicate LAB_DRAW_COUNT deckCard)
         afterAction.currentTurn.actions |> should equal <| protoGame.currentTurn.actions + LAB_ACTIONS - 1 (* -1 for use of lab *)
 
+    let [<Test>] market () =
+        let aId = 1
+        let afterAction = useAction aId Market 
+        afterAction.currentTurn.actions |> should equal <| protoGame.currentTurn.actions + MARKET_ACTIONS - 1 (* -1 for use of action *)
+        afterAction.currentTurn.buys |> should equal <| protoGame.currentTurn.buys + MARKET_BUYS
+        afterAction.currentTurn.purchasingPower |> should equal <| protoGame.currentTurn.purchasingPower + MARKET_PURCHASING_POWER
+        (GameState.getPlayer aId afterAction).hand |> List.length |> should equal
+            <| ((GameState.getPlayer aId protoGame).hand |> List.length) + MARKET_CARDS
+
+
 module BotTests =
     let buy toBuy hand game = 
         let id = 0

@@ -82,4 +82,9 @@ let rec actionOfCard = function
   | Laboratory -> fun aId gameState -> gameState
                                         |> GameState.addActions LAB_ACTIONS
                                         |> GameState.drawFor LAB_DRAW_COUNT aId
+  | Market -> fun aId gameState -> gameState
+                                    |> GameState.addActions MARKET_ACTIONS
+                                    |> GameState.addBuys MARKET_BUYS
+                                    |> GameState.addPurchasingPower MARKET_PURCHASING_POWER
+                                    |> GameState.drawFor MARKET_CARDS aId
   | _ -> failwith "not impl"
