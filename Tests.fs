@@ -270,6 +270,27 @@ module ActionTests =
         (GameState.getPlayer aId afterAction).hand |> List.length |> should equal
             <| ((GameState.getPlayer aId protoGame).hand |> List.length) + MARKET_CARDS
 
+    let [<Test>] mine () =
+        let aId = 0
+        let mine = Mine Copper
+        let afterAction =
+            protoGame
+            |> GameState.updatePlayer aId (fun player -> {player with hand = [Coin Copper; Action mine]; deck=[]; discard=[]})
+            |> GameStateUpdate.act aId mine
+            |> GameState.getPlayer aId
+        afterAction.hand |> should equal [Coin Silver]
+        Utils.allCards afterAction |> should not' (contain (Coin Copper))
+
+    let [<Test>] ``mine doesn't have treasure`` () =
+        let aId = 1
+        let mine = Mine Silver
+        let afterAction =
+            protoGame
+            |> GameState.updatePlayer aId (fun player -> {player with hand = [Action mine]; deck=[]; discard=[]})
+            |> GameStateUpdate.act aId mine
+            |> GameState.getPlayer aId
+        afterAction.hand |> should equal []
+        Utils.allCards afterAction |> should not' (contain (Coin Gold))
 
 module BotTests =
     let buy toBuy hand game = 

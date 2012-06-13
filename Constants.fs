@@ -61,7 +61,7 @@ let cardCost = function
                   | Laboratory -> 5
                   | Library -> 5
                   | Market -> 5
-                  | Mine -> 5
+                  | Mine _ -> 5
                   | Witch -> 5
                   | Adventurer -> 6
 

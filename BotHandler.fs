@@ -7,6 +7,8 @@
         let allCards gameState playerId = List.nth gameState.players playerId |> Utils.allCards
         let canBuy id gameState card = GameState.totalPurchasingPower id gameState > Constants.cardCost card
                                         && gameState.currentTurn.buys > 0
+
+        (* TODO There is action-card specific validation as well *)
         let canAct id gameState actCard = Utils.contains (Action actCard) (GameState.getPlayer id gameState).hand
                                             && gameState.currentTurn.actions > 0
 

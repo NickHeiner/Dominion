@@ -70,21 +70,39 @@ let rec actionOfCard = function
                                               let action = (actionOfCard act) id
                                               gameState |> action |> action
                                               |> GameState.discard (Action act) id
+
   | CouncilRoom -> fun aId gameState -> gameState
                                         |> GameState.addBuys COUNCIL_ROOM_BUYS
                                         |> GameState.drawFor COUNCIL_ROOM_SELF_DRAW_COUNT aId
                                         |> Seq.fold (fun game pId -> GameState.drawFor COUNCIL_ROOM_OTHER_DRAW_COUNT pId game)
                                         <| (GameState.getIdRange gameState |> Seq.filter ((<>) aId))
+
   | Festival -> fun aId gameState -> gameState
                                         |> GameState.addActions FESTIVAL_ACTIONS
                                         |> GameState.addBuys FESTIVAL_BUYS
                                         |> GameState.addPurchasingPower FESTIVAL_PURCHASE_POWER
+
   | Laboratory -> fun aId gameState -> gameState
                                         |> GameState.addActions LAB_ACTIONS
                                         |> GameState.drawFor LAB_DRAW_COUNT aId
+
   | Market -> fun aId gameState -> gameState
                                     |> GameState.addActions MARKET_ACTIONS
                                     |> GameState.addBuys MARKET_BUYS
                                     |> GameState.addPurchasingPower MARKET_PURCHASING_POWER
                                     |> GameState.drawFor MARKET_CARDS aId
+
+  | Mine toMine -> fun aId gameState -> if Utils.listMem (GameState.getPlayer aId gameState).hand (Coin toMine) |> not
+                                        then gameState
+                                        else
+                                            (* Technically, you can trash a treasure for an equivalent or shittier one, 
+                                               but that seems extraordinarily unlikely to be a good idea from the player's
+                                               perspective, so I'm just going to not implement it for now. *)
+                                            let toGain = match toMine with
+                                                         | Copper -> Silver
+                                                         | _ -> Gold 
+                                            gameState 
+                                                |> GameState.trash (Coin toMine) aId
+                                                |> GameState.updatePlayer aId (fun player -> {player with hand = (Coin toGain)::player.hand})
+                                    
   | _ -> failwith "not impl"
