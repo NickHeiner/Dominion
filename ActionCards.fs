@@ -110,4 +110,17 @@ let rec actionOfCard = function
                                                             else GameState.addCards WITCH_CURSE_COUNT pId <| Victory Curse) game) gameState
                                     <| GameState.getIdRange gameState
 
+  | Adventurer -> fun aId -> let rec helper soFar notTreasure player =
+                                         let finalPlayer = {player with discard = player.discard @ notTreasure; hand = player.hand @ soFar}
+                                         if List.length soFar >= ADVENTURER_TREASURE_COUNT
+                                         then finalPlayer
+                                         else
+                                            match player.deck with
+                                            |  ((Coin c) as treasure)::tl -> helper (treasure::soFar) notTreasure {player with deck = tl} 
+                                            |  hd::tl -> helper soFar (hd::notTreasure) {player with deck = tl} 
+                                            |  [] -> match player.discard with
+                                                     | [] -> finalPlayer
+                                                     | _ -> helper soFar notTreasure {player with deck = Utils.shuffle player.discard; discard = []}
+                             GameState.updatePlayer aId (helper [] [])
+
   | _ -> failwith "not impl"

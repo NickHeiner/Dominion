@@ -303,6 +303,52 @@ module ActionTests =
                                             then player.hand |> should equal deck
                                             else player.discard |> should contain (Victory Curse))
 
+    let [<Test>] adventurer () =
+        let aId = 1
+        let treasure1 = Coin Gold
+        let treasure2 = Coin Silver
+        let gardens = Victory Gardens
+        let deck = (List.replicate 4 <| Victory Estate) @ [treasure1] @ (List.replicate 20 <| Action Smithy)
+        let discard = (List.replicate 4 <| Action Market) @ [treasure2]  @ (List.replicate 20 <| Victory Gardens)
+        let afterAction = 
+            protoGame
+            |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Adventurer; gardens]; deck = deck; discard = discard})
+            |> GameStateUpdate.act aId Adventurer
+            |> GameState.getPlayer aId
+        afterAction.hand |> memberEquals [treasure1; treasure2; gardens]
+
+    let [<Test>] ``adventurer only one treasure`` () =
+        let aId = 1
+        let treasure1 = Coin Gold
+        let gardens = Victory Gardens
+        let deck = (List.replicate 4 <| Victory Estate) @ [treasure1] @ (List.replicate 20 <| Action Smithy)
+        let discard = (List.replicate 4 <| Action Market) @ (List.replicate 20 <| Victory Gardens)
+        let afterAction = 
+            protoGame
+            |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Adventurer; gardens]; deck = deck; discard = discard})
+            |> GameStateUpdate.act aId Adventurer
+            |> GameState.getPlayer aId
+        afterAction.hand |> memberEquals [treasure1; gardens]
+
+    let [<Test>] ``adventurer no shuffle necessary`` () =
+        let aId = 1
+        let treasure1 = Coin Gold
+        let treasure2 = Coin Silver
+        let gardens = Victory Gardens
+        let deckPrefix = List.replicate 4 <| Victory Estate
+        let deckSuffix = List.replicate 20 <| Action Smithy
+        let deck = deckPrefix @ [treasure1; treasure2] @ deckSuffix
+        let discard = (List.replicate 4 <| Action Market) @ (List.replicate 20 <| Victory Gardens)
+        let afterAction = 
+            protoGame
+            |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Adventurer; gardens]; deck = deck; discard = discard})
+            |> GameStateUpdate.act aId Adventurer
+            |> GameState.getPlayer aId
+        afterAction.hand |> memberEquals [treasure1; treasure2; gardens]
+        afterAction.discard |> memberEquals <| deckPrefix @ discard @ [Action Adventurer]
+        afterAction.deck |> should equal deckSuffix
+
+
 module BotTests =
     let buy toBuy hand game = 
         let id = 0
