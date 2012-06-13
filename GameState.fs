@@ -53,3 +53,5 @@ let gainCard card id = updatePlayer id (fun player -> {player with discard = car
 
 let getIdRange gameState = { 0 .. List.length gameState.players - 1}
     
+(* TODO this needs to take into account global card counts *)
+let addCards count pId card = updatePlayer pId (fun player -> {player with discard = (List.replicate count card)@player.discard})

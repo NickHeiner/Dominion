@@ -292,6 +292,17 @@ module ActionTests =
         afterAction.hand |> should equal []
         Utils.allCards afterAction |> should not' (contain (Coin Gold))
 
+    let [<Test>] witch () =
+        let aId = 0
+        let deck = List.replicate 2 <| Victory Estate
+        (protoGame
+        |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Witch]; deck = deck})
+        |> GameStateUpdate.act aId Witch).players
+        |> Utils.withIndices
+        |> List.iter (fun (pId, player) -> if pId = aId
+                                            then player.hand |> should equal deck
+                                            else player.discard |> should contain (Victory Curse))
+
 module BotTests =
     let buy toBuy hand game = 
         let id = 0

@@ -105,4 +105,9 @@ let rec actionOfCard = function
                                                 |> GameState.trash (Coin toMine) aId
                                                 |> GameState.updatePlayer aId (fun player -> {player with hand = (Coin toGain)::player.hand})
                                     
+  | Witch -> fun aId gameState -> Seq.fold (fun game pId -> (if pId = aId
+                                                            then GameState.drawFor WITCH_DRAW_COUNT aId
+                                                            else GameState.addCards WITCH_CURSE_COUNT pId <| Victory Curse) game) gameState
+                                    <| GameState.getIdRange gameState
+
   | _ -> failwith "not impl"
