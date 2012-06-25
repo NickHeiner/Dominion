@@ -1,27 +1,57 @@
 ﻿module Definitions
 
-type reshuffle = Reshuffle | NoReshuffle
-type discard = Discard | NoDiscard
-
 type VictCard = Province | Duchy | Estate | Gardens | Curse
 type CoinCard = Gold | Silver | Copper 
 
+type ActCard = Cellar | Chapel  | Chancellor | Village | Woodcutter | Feast | Militia | Moneylender | Remodel
+                | Smithy | Spy | Thief | ThroneRoom | CouncilRoom | Festival | Laboratory | Library | Market
+                | Mine | Witch | Adventurer
+
+type card = Victory of VictCard | Coin of CoinCard | Action of ActCard
+
+type reshuffle = Reshuffle | NoReshuffle
+type discard = Discard | NoDiscard
+
+type thiefReaction = Gain | Trash | Keep
 
 [<CustomEquality; CustomComparison>]
 type spyChoice = 
-  SpyChoice of ((card -> discard) * (card -> discard)) 
+  SpyChoice of (card -> discard) * (card -> discard)
       override x.Equals(y) = (match y with :? spyChoice -> true | _ -> false)
       override x.GetHashCode() = 0
       interface System.IComparable with
         member x.CompareTo(y) = (match y with :? spyChoice -> 0 | _ -> failwith "wrong type")
-      
-and ActCard = Cellar of card list | Chapel of card option * card option* card option * card option
-                | Chancellor of reshuffle | Village | Woodcutter | Feast of card | Militia | Moneylender | Remodel of card * card
-                | Smithy | Spy of spyChoice | Thief | ThroneRoom of ActCard 
-                | CouncilRoom | Festival | Laboratory | Library | Market
-                | Mine of CoinCard | Witch | Adventurer
 
-and card = Victory of VictCard | Coin of CoinCard | Action of ActCard
+type thiefChoice = ThiefChoice of (card -> thiefReaction)
+
+type argActCard = ACellar of card list | AChapel of card option * card option* card option * card option
+                | AChancellor of reshuffle | AVillage | AWoodcutter | AFeast of card | AMilitia | AMoneylender | ARemodel of card * card
+                | ASmithy | ASpy of spyChoice | AThief | AThroneRoom of argActCard 
+                | ACouncilRoom | AFestival | ALaboratory | ALibrary | AMarket
+                | AMine of CoinCard | AWitch | AAdventurer
+
+let getRaw = function
+                | ACellar _ -> Cellar
+                | AChapel _ -> Chapel
+                | AChancellor _ -> Chancellor
+                | AVillage -> Village
+                | AWoodcutter -> Woodcutter
+                | AFeast _ -> Feast
+                | AMilitia -> Militia
+                | AMoneylender -> Moneylender
+                | ARemodel _ -> Remodel
+                | ASmithy -> Smithy
+                | ASpy _ -> Spy
+                | AThief -> Thief
+                | AThroneRoom _ -> ThroneRoom
+                | ACouncilRoom -> CouncilRoom
+                | AFestival -> Festival
+                | ALaboratory -> Laboratory
+                | ALibrary -> Library
+                | AMarket -> Market
+                | AMine _ -> Mine
+                | AWitch -> Witch
+                | AAdventurer -> Adventurer
 
 (* Turn for a player. purchasingPower doesn't include coins. *)
 type turn = {actions : int; buys : int; purchasingPower : int}
@@ -29,7 +59,7 @@ type turn = {actions : int; buys : int; purchasingPower : int}
 type act = Act of ActCard
 type buy = Buy of card
 
-type bot = act list * buy list
+type bot = argActCard list * buy list
 
 [<CustomEquality; NoComparisonAttribute>]
 type player = {hand : card list; deck : card list; discard : card list; bot : bot;
