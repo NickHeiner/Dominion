@@ -31,6 +31,7 @@ let MARKET_PURCHASING_POWER = 1
 let WITCH_DRAW_COUNT = 2
 let WITCH_CURSE_COUNT = 1
 let ADVENTURER_TREASURE_COUNT = 2
+let SPY_CARD_COUNT = 1
 
 let initialPlayer = {hand=[]; discard=[]; deck = List.replicate 7 (Coin Copper) @ List.replicate 3 (Victory Estate); bot = [], []; militiaReaction = fun _ -> (None, None, None)}
 
@@ -56,7 +57,7 @@ let cardCost = function
                   | Moneylender -> 4
                   | Remodel _ -> 4
                   | Smithy -> 4 
-                  | Spy -> 4
+                  | Spy _ -> 4
                   | Thief -> 4
                   | ThroneRoom _ -> 4
                   | CouncilRoom -> 5

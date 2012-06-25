@@ -197,8 +197,77 @@ module ActionTests =
                                        |> Set.ofList
                                        |> should equal ((hand @ (List.toSeq deck |> Seq.take SMITHY_CARDS_DRAW |> Seq.toList)) |> Set.ofList)
 
-    (* let [<Test>] spy () = *)
-
+    let [<Test>] spy () =
+        let aId = 0
+        let f (x : card) = Discard
+        let spy = Spy <| SpyChoice ((function Victory _ -> Discard | _ -> NoDiscard), (function Victory _ -> NoDiscard | _ -> Discard))
+        let selfDeckPrefix = [Victory Curse; Coin Copper]
+        let selfDeckSuffix = [Victory Estate]
+        let otherDeck = [Coin Gold]
+        ((Seq.fold (fun game pId -> (if pId = aId 
+                                     then GameState.updatePlayer pId
+                                            (fun player -> {player with hand = [Action spy]; deck = selfDeckPrefix @ selfDeckSuffix; discard = []})
+                                     else GameState.updatePlayer pId
+                                            (fun player -> {player with deck = otherDeck; discard = []})) game) protoGame
+        <| GameState.getIdRange protoGame) 
+        |> GameStateUpdate.act aId spy).players
+        |> Utils.withIndices
+        |> List.iter (fun (pId, player) -> if pId = aId
+                                           then 
+                                                player.hand |> should equal [List.head selfDeckPrefix]
+                                                player.deck |> should equal <| List.tail (selfDeckPrefix @ selfDeckSuffix)
+                                           else 
+                                                player.deck |> should equal []
+                                                player.discard |> should equal otherDeck)
+                                                
+    let [<Test>] ``spy deck empty`` () =
+        let aId = 0
+        let f (x : card) = Discard
+        let spy = Spy <| SpyChoice ((function Victory _ -> Discard | _ -> NoDiscard), (function Victory _ -> NoDiscard | _ -> Discard))
+        let selfDeckPrefix = [Coin Copper]
+        let selfDeckSuffix = [Victory Estate]
+        let otherDiscard = [Victory Gardens]
+        ((Seq.fold (fun game pId -> (if pId = aId 
+                                     then GameState.updatePlayer pId
+                                            (fun player -> {player with hand = [Action spy]; deck = selfDeckPrefix @ selfDeckSuffix; discard = []})
+                                     else GameState.updatePlayer pId
+                                            (fun player -> {player with deck = []; discard = otherDiscard})) game) protoGame
+        <| GameState.getIdRange protoGame) 
+        |> GameStateUpdate.act aId spy).players
+        |> Utils.withIndices
+        |> List.iter (fun (pId, player) -> if pId = aId
+                                           then 
+                                                player.hand |> should equal selfDeckPrefix
+                                                memberEquals player.discard <| (Action spy)::selfDeckSuffix
+                                                player.deck |> should equal []
+                                           else 
+                                                player.deck |> should equal []
+                                                player.discard |> should equal otherDiscard)
+                                                
+    let [<Test>] ``spy discard self, keep other`` () =
+        let aId = 0
+        let f (x : card) = Discard
+        let spy = Spy <| SpyChoice ((function Victory _ -> Discard | _ -> NoDiscard), (function Victory _ -> NoDiscard | _ -> Discard))
+        let selfDeckPrefix = [Victory Estate]
+        let selfDeckSuffix = [Action Smithy]
+        let otherDeck = [Victory Gardens]
+        ((Seq.fold (fun game pId -> (if pId = aId 
+                                     then GameState.updatePlayer pId
+                                            (fun player -> {player with hand = [Action spy]; deck = selfDeckPrefix @ selfDeckSuffix; discard = []})
+                                     else GameState.updatePlayer pId
+                                            (fun player -> {player with deck = otherDeck; discard = []})) game) protoGame
+        <| GameState.getIdRange protoGame) 
+        |> GameStateUpdate.act aId spy).players
+        |> Utils.withIndices
+        |> List.iter (fun (pId, player) -> if pId = aId
+                                           then 
+                                                player.hand |> should equal selfDeckPrefix
+                                                player.deck |> should equal selfDeckSuffix
+                                                player.discard |> should equal [Action spy]
+                                           else 
+                                                player.deck |> should equal otherDeck
+                                                player.discard |> should equal [])
+                                                
     let [<Test>] throneRoom () = 
         let actorId = 1
         let hand = List.replicate 5 (Coin Copper)

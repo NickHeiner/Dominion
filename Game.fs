@@ -31,6 +31,8 @@ module Game =
     let afterRound = turn gameState.players gameState 0
     if gameOver afterRound then afterRound else round afterRound
 
+  (* It's necessary to pick action cards that are in the game
+     It would be good to look at the bots that are playing and see which cards they require. *)
   let getInitialState bots =
     bots
       |> List.rev

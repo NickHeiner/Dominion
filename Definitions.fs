@@ -1,20 +1,23 @@
 ﻿module Definitions
 
 type reshuffle = Reshuffle | NoReshuffle
+type discard = Discard | NoDiscard
 
 type VictCard = Province | Duchy | Estate | Gardens | Curse
 type CoinCard = Gold | Silver | Copper 
 
-(*
-[<CustomEquality; NoComparison>]
-type spyFunc = 
-  SpyFunc of (card -> bool * card -> bool) 
-      override x.Equals(y) = (match y with :? spyFunc -> true | _ -> false)
+
+[<CustomEquality; CustomComparison>]
+type spyChoice = 
+  SpyChoice of ((card -> discard) * (card -> discard)) 
+      override x.Equals(y) = (match y with :? spyChoice -> true | _ -> false)
       override x.GetHashCode() = 0
-      *)
-type ActCard = Cellar of card list | Chapel of card option * card option* card option * card option
+      interface System.IComparable with
+        member x.CompareTo(y) = (match y with :? spyChoice -> 0 | _ -> failwith "wrong type")
+      
+and ActCard = Cellar of card list | Chapel of card option * card option* card option * card option
                 | Chancellor of reshuffle | Village | Woodcutter | Feast of card | Militia | Moneylender | Remodel of card * card
-                | Smithy | Spy (* of spyFunc *) | Thief | ThroneRoom of ActCard 
+                | Smithy | Spy of spyChoice | Thief | ThroneRoom of ActCard 
                 | CouncilRoom | Festival | Laboratory | Library | Market
                 | Mine of CoinCard | Witch | Adventurer
 
