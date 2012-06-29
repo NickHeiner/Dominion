@@ -18,17 +18,17 @@
             let afterAction = (ActionCards.actionOfCard actCard) pId withTurn
             afterAction |> GameState.safeDiscard (Action <| Definitions.getRaw actCard) pId
 
-        let buy id card gameState = let availableMoney = GameState.totalPurchasingPower id gameState
-                                    let cost = cardCost card 
-                                    let withPlayer = GameState.updatePlayer id
+        let buy pId card gameState = let availableMoney = GameState.totalPurchasingPower pId gameState
+                                     let cost = cardCost card 
+                                     let withPlayer = GameState.updatePlayer pId
                                                         (fun player -> {player with discard = card::player.discard}) gameState
-                                    {withPlayer with cards = Map.add card ((Map.find card withPlayer.cards) - 1) withPlayer.cards }
-                                    |> GameState.withTurn {withPlayer.currentTurn
+                                     {withPlayer with cards = Map.add card ((Map.find card withPlayer.cards) - 1) withPlayer.cards }
+                                     |> GameState.withTurn {withPlayer.currentTurn
                                                             with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card}
 
-        let applyFirstValidBuy id buys gameState =
-            match List.tryFind (function Buy card -> Query.canBuy id gameState card) buys with
-                | Some (Buy card) -> buy id card gameState
+        let applyFirstValidBuy pId buys gameState =
+            match List.tryFind (function Buy card -> Query.canBuy pId gameState card) buys with
+                | Some (Buy card) -> buy pId card gameState
                 | None -> gameState
 
         let applyFirstValidAction pId (acts : argActCard list) gameState =

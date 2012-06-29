@@ -12,7 +12,10 @@ type card = Victory of VictCard | Coin of CoinCard | Action of ActCard
 type reshuffle = Reshuffle | NoReshuffle
 type discard = Discard | NoDiscard
 
-type thiefReaction = Gain | Trash | Keep
+type pId = PId of int
+
+(* Is "keep" really an option? *)
+type thiefReaction = Gain of CoinCard | Trash of CoinCard | Keep of CoinCard
 
 [<CustomEquality; CustomComparison>]
 type spyChoice = 
@@ -22,11 +25,17 @@ type spyChoice =
       interface System.IComparable with
         member x.CompareTo(y) = (match y with :? spyChoice -> 0 | _ -> failwith "wrong type")
 
-type thiefChoice = ThiefChoice of (card -> thiefReaction)
+[<CustomEquality; CustomComparison>]
+type thiefChoice = 
+    ThiefChoice of (CoinCard option -> CoinCard option -> thiefReaction)
+        override x.Equals(y) = (match y with :? thiefChoice -> true | _ -> false)
+        override x.GetHashCode() = 0
+        interface System.IComparable with
+            member x.CompareTo(y) = (match y with :? thiefChoice -> 0 | _ -> failwith "wrong type")
 
 type argActCard = ACellar of card list | AChapel of card option * card option* card option * card option
                 | AChancellor of reshuffle | AVillage | AWoodcutter | AFeast of card | AMilitia | AMoneylender | ARemodel of card * card
-                | ASmithy | ASpy of spyChoice | AThief | AThroneRoom of argActCard 
+                | ASmithy | ASpy of spyChoice | AThief of thiefChoice | AThroneRoom of argActCard 
                 | ACouncilRoom | AFestival | ALaboratory | ALibrary | AMarket
                 | AMine of CoinCard | AWitch | AAdventurer
 
@@ -42,7 +51,7 @@ let getRaw = function
                 | ARemodel _ -> Remodel
                 | ASmithy -> Smithy
                 | ASpy _ -> Spy
-                | AThief -> Thief
+                | AThief _ -> Thief
                 | AThroneRoom _ -> ThroneRoom
                 | ACouncilRoom -> CouncilRoom
                 | AFestival -> Festival

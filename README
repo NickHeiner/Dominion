@@ -1,5 +1,5 @@
 I'm mostly interested in doing this to play with F#. I suspect that I'll do many things incorrectly at first, but plan to ask for help on how to be a better F#-er. I am also curious to experiment with genetic algorithms.
 
-Because I'm new to F#, the style jumps around all over the place. I'm not trying to keep everything consistent, as I would in a professional setting. Instead, I'm experimenting iwth different styles to see what works.
+Because I'm new to F#, the style jumps around all over the place. I'm not trying to keep everything consistent, as I would in a professional setting. Instead, I'm experimenting with different styles to see what works.
 
 Later, I may expand this to have a client-server architecture, so anyone can write a bot to compete.

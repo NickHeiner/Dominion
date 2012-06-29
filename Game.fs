@@ -14,21 +14,21 @@ module Game =
     (List.sumBy victoryPointsFor cards) + gardensCount * (List.length cards / GARDENS_FACTOR)
     
   let rec round (gameState : gameState) = 
-    let rec turn players gameState playerId =
+    let rec turn players gameState ((PId index) as pId) =
       if gameOver gameState then gameState else
         match players with
           | [] -> gameState
           | hd::tl ->
                       let rec applyUpdate apply bot gameState =
-                        let afterUpdate = apply playerId bot gameState
+                        let afterUpdate = apply pId bot gameState
                         if afterUpdate = gameState then gameState else applyUpdate apply bot afterUpdate
                       let acts, buys = hd.bot
                       let afterTurn = applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction acts gameState
                                         |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy buys
-                                        |> GameState.updatePlayer playerId (fun player -> GameState.discardAll player |> GameState.draw 5)
+                                        |> GameState.updatePlayer pId (fun player -> GameState.discardAll player |> GameState.draw 5)
                                         |> GameState.nextTurn
-                      turn tl afterTurn (playerId + 1)
-    let afterRound = turn gameState.players gameState 0
+                      turn tl afterTurn <| PId (index + 1)
+    let afterRound = turn gameState.players gameState <| PId 0
     if gameOver afterRound then afterRound else round afterRound
 
   (* It's necessary to pick action cards that are in the game

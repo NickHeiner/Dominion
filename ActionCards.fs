@@ -5,6 +5,12 @@ open Constants
 
 type action = int -> gameState -> gameState
 
+let isValidCardChoice choice (card1, card2) =
+    let cards = Utils.withoutNone [card1; card2]
+    match choice with
+    | Gain card | Trash card | Keep card when Utils.listMem cards card -> true
+    | _ -> false
+
 (* TODO these fail to take Moat into account *)
 
 (* Maybe validation should be separated out from the actual action logic.
@@ -141,6 +147,31 @@ let rec actionOfCard = function
                                                                                                         | hd::tl -> match choice hd with
                                                                                                                     | Discard -> {player with deck = tl; discard = hd::player.discard}
                                                                                                                     | NoDiscard -> player
+                                                                (* TODO shouldn't this look into the discard if the deck is empty? *)
                                                                                                         | [] -> player)
 
-  | _ -> failwith "not impl"
+  | AThief (ThiefChoice chooseCards) ->
+    fun aId gameState -> 
+        List.fold (fun game pId -> if pId = aId
+                                   then game
+                                   else 
+                                        let withCardCount = GameState.ensureCardCount pId THIEF_CARD_COUNT game
+                                        let (card1, card2) =
+                                            match (GameState.getPlayer pId withCardCount).deck with
+                                            | [] -> None, None
+                                            | (Coin c0)::(Coin c1)::tl -> Some c0, Some c1
+                                            | (Coin c)::_::tl | _::(Coin c)::tl -> Some c, None
+                                            | _ -> None, None
+                                        let choice = chooseCards card1 card2
+                                        if not <| isValidCardChoice choice (card1, card2)
+                                            then game
+                                            else 
+                                            match choice with
+                                            | Gain coin -> game 
+                                                            |> GameState.trashFromDeck (Coin coin) pId 
+                                                            |> GameState.addCards 1 aId (Coin coin)
+                                            | Trash coin -> GameState.trashFromDeck (Coin coin) pId game
+                                            | Keep _ -> game) gameState <| (Seq.toList <| GameState.getIdRange gameState)
+                                        
+
+  | unrecognized -> failwith <| sprintf "action card not impl %A" unrecognized
