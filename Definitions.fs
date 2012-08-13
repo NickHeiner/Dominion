@@ -5,7 +5,7 @@ type CoinCard = Gold | Silver | Copper
 
 type ActCard = Cellar | Chapel  | Chancellor | Village | Woodcutter | Feast | Militia | Moneylender | Remodel
                 | Smithy | Spy | Thief | ThroneRoom | CouncilRoom | Festival | Laboratory | Library | Market
-                | Mine | Witch | Adventurer
+                | Mine | Witch | Workshop | Moat | Bureaucrat | Adventurer
 
 type card = Victory of VictCard | Coin of CoinCard | Action of ActCard
 
@@ -46,7 +46,7 @@ type argActCard = ACellar of card list | AChapel of card option * card option* c
                 | AChancellor of reshuffle | AVillage | AWoodcutter | AFeast of card | AMilitia | AMoneylender | ARemodel of card * card
                 | ASmithy | ASpy of spyChoice | AThief of thiefChoice | AThroneRoom of argActCard 
                 | ACouncilRoom | AFestival | ALaboratory | ALibrary of libraryChoice | AMarket
-                | AMine of CoinCard | AWitch | AAdventurer
+                | AMine of CoinCard | AWitch | AAdventurer | AMoat | ABureaucrat | AWorkshop
 
 let getRaw = function
                 | ACellar _ -> Cellar
@@ -70,6 +70,9 @@ let getRaw = function
                 | AMine _ -> Mine
                 | AWitch -> Witch
                 | AAdventurer -> Adventurer
+                | AMoat -> Moat
+                | ABureaucrat -> Bureaucrat
+                | AWorkshop -> Workshop
 
 (* Turn for a player. purchasingPower doesn't include coins. *)
 type turn = {actions : int; buys : int; purchasingPower : int}

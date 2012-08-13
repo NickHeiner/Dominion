@@ -112,10 +112,12 @@ let rec actionOfCard = function
                                                     |> GameState.trash (Coin toMine) aId
                                                     |> GameState.updatePlayer aId (fun player -> {player with hand = (Coin toGain)::player.hand})
                                     
-  | AWitch -> fun aId gameState -> Seq.fold (fun game pId -> (if pId = aId
-                                                                then GameState.drawFor WITCH_DRAW_COUNT aId
-                                                                else GameState.addCards WITCH_CURSE_COUNT pId <| Victory Curse) game) gameState
-                                        <| GameState.getIdRange gameState
+  | AWitch -> fun aId gameState -> Seq.fold (fun game pId -> match pId with
+                                                              | x when x = aId -> GameState.drawFor WITCH_DRAW_COUNT aId game
+                                                              | x when GameState.hasMoat x game -> game
+                                                              | _ -> GameState.addCards WITCH_CURSE_COUNT pId (Victory Curse) game)
+                                            gameState
+                                            <| GameState.getIdRange gameState
 
   | AAdventurer -> fun aId -> let rec helper soFar notTreasure player =
                                          let finalPlayer = {player with discard = player.discard @ notTreasure; hand = player.hand @ soFar}
@@ -186,9 +188,10 @@ let rec actionOfCard = function
                     (* LIBRARY_CARD_COUNT + 1 because the Library is still in the hand at this point *)
                 if GameState.getPlayer aId game |> GameState.getHand |> List.length = LIBRARY_CARD_COUNT + 1
                     || (GameState.deckLen aId game = 0 && GameState.getPlayer aId game |> GameState.getDiscard |> List.length = 0)
+                (* "If you run out of cards even after shuffling, you just get however many there were." *)
                 then game
                 else GameState.updatePlayer
-                        aId
+                        aId 
                         (fun player -> match player.deck with
                                         | ((Action action) as actCard)::tl -> match shouldDiscard action with
                                                                               | Discard -> {player with discard=actCard::player.discard; deck=tl}
@@ -198,3 +201,5 @@ let rec actionOfCard = function
                         game
                         |> helper
             helper gameState
+
+    | unrecognized -> failwith <| sprintf "unrecognized action card: %A" unrecognized

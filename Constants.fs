@@ -70,6 +70,9 @@ let cardCost = function
                   | Mine _ -> 5
                   | Witch -> 5
                   | Adventurer -> 6
+                  | Bureaucrat -> 4
+                  | Moat -> 2
+                  | Workshop -> 3
 
 let purchasingPowerOf = function
   | Coin c -> match c with

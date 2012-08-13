@@ -84,3 +84,7 @@ let ensureCardCountInDeck pId count gameState =
                                                 if deckLen pId gameState >= count
                                                 then gameState
                                                 else updatePlayer pId refillDeck gameState
+
+let hasMoat pId game = getPlayer pId game
+                        |> getHand
+                        |> Utils.contains (Action Moat)

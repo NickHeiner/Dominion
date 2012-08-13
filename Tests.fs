@@ -440,6 +440,20 @@ module ActionTests =
                                             then player.hand |> should equal deck
                                             else player.discard |> should contain (Victory Curse))
 
+    let [<Test>] ``witch blocked by moat`` () =
+        let aId = PId 0
+        let withMoat = PId 1
+        let deck = List.replicate 2 <| Victory Estate
+        (protoGame
+        |> GameState.updatePlayer withMoat (fun player -> {player with hand = [Action Moat]})
+        |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Witch]; deck = deck})
+        |> GameStateUpdate.act aId AWitch).players
+        |> Utils.withIndices
+        |> List.iter (fun (pId, player) -> match PId pId with
+                                            | x when x = aId ->      player.hand |> should equal deck
+                                            | x when x = withMoat -> player.discard |> should not' (contain (Victory Curse))
+                                            | _ ->                   player.discard |> should contain (Victory Curse))
+
     let [<Test>] adventurer () =
         let aId = PId 1
         let treasure1 = Coin Gold
