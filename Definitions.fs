@@ -34,10 +34,18 @@ type thiefChoice =
         interface System.IComparable with
             member x.CompareTo(y) = (match y with :? thiefChoice -> 0 | _ -> failwith "wrong type")
 
+[<CustomEquality; CustomComparison>]
+type libraryChoice =
+    LibraryChoice of (ActCard -> discard)
+        override x.Equals(y) = (match y with :? libraryChoice -> true | _ -> false)
+        override x.GetHashCode() = 0
+        interface System.IComparable with
+            member x.CompareTo(y) = (match y with :? libraryChoice -> 0 | _ -> failwith "wrong type")
+
 type argActCard = ACellar of card list | AChapel of card option * card option* card option * card option
                 | AChancellor of reshuffle | AVillage | AWoodcutter | AFeast of card | AMilitia | AMoneylender | ARemodel of card * card
                 | ASmithy | ASpy of spyChoice | AThief of thiefChoice | AThroneRoom of argActCard 
-                | ACouncilRoom | AFestival | ALaboratory | ALibrary | AMarket
+                | ACouncilRoom | AFestival | ALaboratory | ALibrary of libraryChoice | AMarket
                 | AMine of CoinCard | AWitch | AAdventurer
 
 let getRaw = function
@@ -57,7 +65,7 @@ let getRaw = function
                 | ACouncilRoom -> CouncilRoom
                 | AFestival -> Festival
                 | ALaboratory -> Laboratory
-                | ALibrary -> Library
+                | ALibrary _ -> Library
                 | AMarket -> Market
                 | AMine _ -> Mine
                 | AWitch -> Witch

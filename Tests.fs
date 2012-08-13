@@ -333,7 +333,7 @@ module ActionTests =
                                                 |> memberEquals <| List.replicate (List.length protoGame.players - 1) (Coin Copper)
                                            else player.discard |> should equal [Coin Gold])
                                          
-    (* TODO: verify that "A player with just one card left reveals that last card and
+    (* TODO: thief: verify that "A player with just one card left reveals that last card and
              then shuffles to get the other card to reveal (without including the revealed card)" *)
     
     let [<Test>] throneRoom () = 
@@ -485,6 +485,35 @@ module ActionTests =
         afterAction.discard |> memberEquals <| deckPrefix @ discard @ [Action Adventurer]
         afterAction.deck |> should equal deckSuffix
 
+    let [<Test>] ``library discard smithies`` () =
+        let aId = PId 0
+        let deck = [Coin Copper; Action Smithy; Coin Silver; Action Thief; Coin Gold;]
+        let origHand = [Victory Province; Victory Curse; Victory Duchy; Victory Estate]
+        let afterAction = protoGame
+                            |> GameState.updatePlayer aId (fun player -> {player with hand = (Action Library)::origHand; deck = deck; discard = []})
+                            |> GameStateUpdate.act aId (ALibrary <| LibraryChoice (function Smithy -> Discard | _ -> NoDiscard))
+                            |> GameState.getPlayer aId
+        afterAction
+        |> GameState.getHand
+        |> List.length
+        |> should equal LIBRARY_CARD_COUNT
+        afterAction 
+        |> GameState.getHand
+        |> memberEquals <| origHand @ (Utils.withoutFirst ((=) (Action Smithy)) deck |> List.rev |> List.tail |> List.rev)
+        afterAction
+        |> GameState.getDeck |> should equal [deck |> List.rev |> List.head]
+        afterAction
+        |> GameState.getDiscard |> memberEquals [Action Smithy; Action Library] 
+
+    let [<Test>] ``library already has enough cards`` () =
+        let aId = PId 0
+        let origHand = List.replicate LIBRARY_CARD_COUNT (Coin Copper)
+        protoGame
+        |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Library] @ origHand; deck = []; discard = []})
+        |> GameStateUpdate.act aId (ALibrary <| LibraryChoice (fun _ -> Discard))
+        |> GameState.getPlayer aId
+        |> GameState.getHand
+        |> memberEquals origHand
 
 module BotTests =
     let buy toBuy hand game = 

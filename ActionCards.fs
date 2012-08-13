@@ -180,5 +180,21 @@ let rec actionOfCard = function
                                         )
                 gameState <| (Seq.toList <| GameState.getIdRange gameState)
                                         
-
-  | unrecognized -> failwith <| sprintf "action card not impl %A" unrecognized
+  | ALibrary (LibraryChoice shouldDiscard) ->
+        fun aId gameState ->
+            let rec helper game =
+                    (* LIBRARY_CARD_COUNT + 1 because the Library is still in the hand at this point *)
+                if GameState.getPlayer aId game |> GameState.getHand |> List.length = LIBRARY_CARD_COUNT + 1
+                    || (GameState.deckLen aId game = 0 && GameState.getPlayer aId game |> GameState.getDiscard |> List.length = 0)
+                then game
+                else GameState.updatePlayer
+                        aId
+                        (fun player -> match player.deck with
+                                        | ((Action action) as actCard)::tl -> match shouldDiscard action with
+                                                                              | Discard -> {player with discard=actCard::player.discard; deck=tl}
+                                                                              | NoDiscard -> {player with hand=actCard::player.hand; deck=tl}   
+                                        | hd::tl -> {player with hand=hd::player.hand; deck=tl}
+                                        | [] -> GameState.refillDeck player)
+                        game
+                        |> helper
+            helper gameState

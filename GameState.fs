@@ -27,6 +27,8 @@ let setHand player hand = {player with hand = hand}
 let getDeck player = player.deck
 let setDeck player deck = {player with deck = deck}
 
+let getDiscard player = player.discard
+
 let totalPurchasingPower pId gameState = 
   gameState.currentTurn.purchasingPower + List.sumBy purchasingPowerOf (getPlayer pId gameState |> getHand)
 
@@ -73,10 +75,12 @@ let addCards count pId card = updatePlayer pId (fun player -> {player with disca
 
 let foldPlayers f gameState = Seq.fold (fun game pId -> updatePlayer pId (f pId) game) gameState <| getIdRange gameState
 
+let deckLen pId gameState = getPlayer pId gameState
+                            |> getDeck
+                            |> List.length
+
 (* Shuffles the entire discard into the deck if the deck currently has fewer than `count` cards *)
-let ensureCardCountInDeck pId count gameState = let deckLen = getPlayer pId gameState
-                                                                |> getDeck
-                                                                |> List.length
-                                                if deckLen >= count
+let ensureCardCountInDeck pId count gameState = 
+                                                if deckLen pId gameState >= count
                                                 then gameState
                                                 else updatePlayer pId refillDeck gameState
