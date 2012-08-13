@@ -269,51 +269,70 @@ module ActionTests =
                                                 player.deck |> should equal otherDeck
                                                 player.discard |> should equal [])
     
-    let [<Test>] thief () =
+    let thiefTest shouldGain actorDeck =
         let aId = PId 0
+        let priorities = function
+                            | Gold -> First
+                            | Silver -> Second
+                            | Copper -> Third
         let afterAction = 
             (protoGame
             |> GameState.foldPlayers (fun pId player -> {player with deck = [Coin Copper; Coin Copper]; hand = []; discard = []})
             |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Thief]})
-            |> GameStateUpdate.act aId (AThief <| ThiefChoice (fun _ _ -> Gain Copper)))
-        memberEquals (GameState.getPlayer aId afterAction).discard 
-            <| Action Thief::(List.replicate (List.length protoGame.players - 1) (Coin Copper))
+            |> GameStateUpdate.act aId (AThief <| ThiefChoice (priorities, shouldGain)))
         afterAction.players
         |> Utils.withIndices
-        |> List.filter (fun (pId, _) -> PId pId <> aId)
-        |> List.map snd
-        |> List.iter (fun player -> player.deck |> should equal [Coin Copper])
+        |> List.iter (fun (pId, player) -> if PId pId = aId 
+                                           then
+                                            player.discard |> memberEquals <| actorDeck 
+                                           else
+                                            player.discard |> should equal [Coin Copper];
+                                            player.deck |> should equal [];
+                                            player.hand |> should equal [])
+    
+    let [<Test>] ``thief should gain`` () = thiefTest (fun _ -> Gain)
+                                                ((Action Thief)::(List.replicate (List.length protoGame.players - 1) (Coin Copper)))
+    let [<Test>] ``thief should not gain`` () = thiefTest (fun _ -> NoGain) [Action Thief]
         
     let [<Test>] ``thief no treasure`` () = 
         let aId = PId 1
+        let priorities = function
+                            | Gold -> First
+                            | Silver -> Second
+                            | Copper -> Third
+        let shouldGain coin = Gain
         let preDeckPrefix = [Victory Estate; Action Smithy]
         let preDeckSuffix = [Coin Copper; Coin Gold]
         let preDeck = preDeckPrefix @ preDeckSuffix
         (protoGame
             |> GameState.foldPlayers (fun pId player -> {player with deck = preDeck; hand = []; discard = []})
             |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Thief]})
-            |> GameStateUpdate.act aId (AThief <| ThiefChoice (fun _ _ -> Gain Gold))).players
+            |> GameStateUpdate.act aId (AThief <| ThiefChoice (priorities, shouldGain))).players
         |> Utils.withIndices
-        |> List.filter (fun (pId, _) -> PId pId <> aId)
-        |> List.map snd
-        |> List.iter (fun player -> player.discard |> should equal preDeckPrefix
-                                    player.deck |> should equal preDeckSuffix)
-                 (*                   
+        |> List.iter (fun (pId, player) -> if PId pId = aId
+                                           then
+                                                player.discard |> should equal [Action Thief]
+                                           else
+                                                player.discard |> memberEquals preDeckPrefix
+                                                player.deck |> memberEquals preDeckSuffix)
+                                    
     let [<Test>] ``thief must shuffle`` () = 
         let aId = PId 0
+        let priorities = function
+                    | Gold -> Third
+                    | Silver -> Second
+                    | Copper -> First
+        let shouldGain coin = Gain
         (protoGame
             |> GameState.foldPlayers (fun pId player -> {player with deck = []; hand = []; discard = [Coin Copper; Coin Gold]})
             |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Thief]; discard = []})
-            |> GameStateUpdate.act aId (AThief <| ThiefChoice (fun card1 card2 ->
-                                                                match card1, card2 with 
-                                                                | Some Copper, Some Gold | Some Gold, Some Copper -> Gain Gold
-                                                                | _ -> failwith "not expecting cards: %A" (card1, card2)))).players
+            |> GameStateUpdate.act aId (AThief <| ThiefChoice (priorities, shouldGain))).players
         |> Utils.withIndices
         |> List.iter (fun (pId, player) -> if PId pId = aId
                                            then List.filter ((<>) (Action Thief)) player.discard
-                                                |> memberEquals <| List.replicate (List.length protoGame.players - 1) (Coin Gold)
-                                           else player.discard |> should equal [Coin Copper])
-                   *)                         
+                                                |> memberEquals <| List.replicate (List.length protoGame.players - 1) (Coin Copper)
+                                           else player.discard |> should equal [Coin Gold])
+                                         
     (* TODO: verify that "A player with just one card left reveals that last card and
              then shuffles to get the other card to reveal (without including the revealed card)" *)
     

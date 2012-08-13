@@ -5,12 +5,6 @@ open Constants
 
 type action = int -> gameState -> gameState
 
-let isValidCardChoice choice (card1, card2) =
-    let cards = Utils.withoutNone [card1; card2]
-    match choice with
-    | Gain card | Trash card | Keep card when Utils.listMem cards card -> true
-    | _ -> false
-
 (* TODO these fail to take Moat into account *)
 
 (* Maybe validation should be separated out from the actual action logic.
@@ -150,28 +144,41 @@ let rec actionOfCard = function
                                                                 (* TODO shouldn't this look into the discard if the deck is empty? *)
                                                                                                         | [] -> player)
 
-  | AThief (ThiefChoice chooseCards) ->
+  | AThief (ThiefChoice (priorities, shouldGain)) ->
     fun aId gameState -> 
         List.fold (fun game pId -> if pId = aId
                                    then game
                                    else 
-                                        let withCardCount = GameState.ensureCardCount pId THIEF_CARD_COUNT game
-                                        let (card1, card2) =
-                                            match (GameState.getPlayer pId withCardCount).deck with
-                                            | [] -> None, None
-                                            | (Coin c0)::(Coin c1)::tl -> Some c0, Some c1
-                                            | (Coin c)::_::tl | _::(Coin c)::tl -> Some c, None
-                                            | _ -> None, None
-                                        let choice = chooseCards card1 card2
-                                        if not <| isValidCardChoice choice (card1, card2)
-                                            then game
-                                            else 
-                                            match choice with
-                                            | Gain coin -> game 
-                                                            |> GameState.trashFromDeck (Coin coin) pId 
-                                                            |> GameState.addCards 1 aId (Coin coin)
-                                            | Trash coin -> GameState.trashFromDeck (Coin coin) pId game
-                                            | Keep _ -> game) gameState <| (Seq.toList <| GameState.getIdRange gameState)
+                                        let withCardCount = GameState.ensureCardCountInDeck pId THIEF_CARD_COUNT game
+                                        let revealedCards = GameState.getPlayer pId withCardCount
+                                                            |> GameState.getDeck
+                                                            |> List.toSeq
+                                                            |> Seq.truncate THIEF_CARD_COUNT
+                                                            |> Seq.toList
+                                        let revealedCoins = List.filter (function Coin coin -> true | _ -> false) revealedCards
+                                        let toTrash = match revealedCoins with
+                                                        | [] -> None
+                                                        | coins -> coins
+                                                                    |> Seq.map (function Coin coin -> coin | _ -> failwith "expecting coin")
+                                                                    |> Seq.sortBy (fun coin -> priorities coin)
+                                                                    |> Seq.head
+                                                                    |> Some
+                                        let toDiscard = match toTrash with
+                                                        | None -> revealedCards
+                                                        | Some coin -> Utils.withoutFirst ((=) (Coin coin)) revealedCards
+                                        let afterDiscard = withCardCount
+                                                            |> GameState.discardCardsFromDeck toDiscard pId 
+                                        match toTrash with
+                                        |   None -> afterDiscard
+                                        |   Some coin -> afterDiscard
+                                                         |> GameState.trashFromDeck (Coin coin) pId 
+                                                         |> match shouldGain coin with
+                                                            (* Technically the card isn't being 'removed' from the trash,
+                                                               but I don't think that actually affects anything. *)
+                                                            | Gain -> GameState.addCards 1 aId (Coin coin) 
+                                                            | NoGain -> id
+                                        )
+                gameState <| (Seq.toList <| GameState.getIdRange gameState)
                                         
 
   | unrecognized -> failwith <| sprintf "action card not impl %A" unrecognized

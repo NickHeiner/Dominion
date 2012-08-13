@@ -14,9 +14,6 @@ type discard = Discard | NoDiscard
 
 type pId = PId of int
 
-(* Is "keep" really an option? *)
-type thiefReaction = Gain of CoinCard | Trash of CoinCard | Keep of CoinCard
-
 [<CustomEquality; CustomComparison>]
 type spyChoice = 
   SpyChoice of (card -> discard) * (card -> discard)
@@ -25,9 +22,13 @@ type spyChoice =
       interface System.IComparable with
         member x.CompareTo(y) = (match y with :? spyChoice -> 0 | _ -> failwith "wrong type")
 
+(* priority must be written in this order, or automatic comparison won't work as expected *)
+type priority = First | Second | Third
+type gain = Gain | NoGain
+
 [<CustomEquality; CustomComparison>]
 type thiefChoice = 
-    ThiefChoice of (CoinCard option -> CoinCard option -> thiefReaction)
+    ThiefChoice of (CoinCard -> priority) * (CoinCard -> gain)
         override x.Equals(y) = (match y with :? thiefChoice -> true | _ -> false)
         override x.GetHashCode() = 0
         interface System.IComparable with
@@ -71,6 +72,7 @@ type buy = Buy of card
 type bot = argActCard list * buy list
 
 [<CustomEquality; NoComparisonAttribute>]
+(* Why are hand and discard lists and not sets? *)
 type player = {hand : card list; deck : card list; discard : card list; bot : bot;
                 militiaReaction : card list -> (card option * card option * card option)}
     

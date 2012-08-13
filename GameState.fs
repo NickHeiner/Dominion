@@ -24,14 +24,20 @@ let addPurchasingPower amount gameState = withTurn {gameState.currentTurn with p
 let getHand player = player.hand
 let setHand player hand = {player with hand = hand}
 
+let getDeck player = player.deck
+let setDeck player deck = {player with deck = deck}
+
 let totalPurchasingPower pId gameState = 
   gameState.currentTurn.purchasingPower + List.sumBy purchasingPowerOf (getPlayer pId gameState |> getHand)
 
+let refillDeck player = {player with deck = Utils.shuffle player.discard; discard = []} 
+
 let rec draw count player =
+  if count < 0 then invalidArg "count" <| sprintf "can't draw negative cards, but count was: %d" count else
   if count = 0 then player else 
     match player.deck with 
       | hd::tl -> draw (count - 1) {player with hand = hd::player.hand; deck = tl}
-      | [] -> draw count {player with deck = Utils.shuffle player.discard; discard = []} 
+      | [] -> draw count <| refillDeck player
 
 let drawFor count pId = updatePlayer pId (fun player -> draw count player)
 
@@ -49,8 +55,12 @@ let removeCard getDiscard setCardSource cardSource requireCard card id gameState
                     | Yes -> invalidArg "card" (sprintf "Player %A does not have card %A" id card)
                     | No -> gameState
 
+(* Ensures that `card` is not in the player's hand *)
 let safeDiscard card = removeCard (fun card discard -> card::discard) setHand getHand No card
+
 let discard card = removeCard (fun card discard -> card::discard) setHand getHand Yes card
+let discardFromDeck card = removeCard (fun card discard -> card::discard) setDeck getDeck Yes card
+let discardCardsFromDeck cards pId initGame = List.fold (fun game card -> discardFromDeck card pId game) initGame cards
 let trash = removeCard (fun _ discard -> discard) setHand getHand Yes
 let trashFromDeck = removeCard (fun _ discard -> discard) (fun player deck -> {player with deck = deck}) (fun player -> player.deck) Yes
 
@@ -63,7 +73,10 @@ let addCards count pId card = updatePlayer pId (fun player -> {player with disca
 
 let foldPlayers f gameState = Seq.fold (fun game pId -> updatePlayer pId (f pId) game) gameState <| getIdRange gameState
 
-let ensureCardCount pId count gameState = let deckLen = List.length (getPlayer pId gameState).deck
-                                          if deckLen >= count
-                                          then gameState
-                                          else drawFor (deckLen - count) pId gameState
+(* Shuffles the entire discard into the deck if the deck currently has fewer than `count` cards *)
+let ensureCardCountInDeck pId count gameState = let deckLen = getPlayer pId gameState
+                                                                |> getDeck
+                                                                |> List.length
+                                                if deckLen >= count
+                                                then gameState
+                                                else updatePlayer pId refillDeck gameState

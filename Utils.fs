@@ -58,6 +58,11 @@ let fillHand src dest =
             | hd::tl -> helper tl (hd::dest)
     helper disjointSrc dest
 
+let pick set = match Set.toList set with
+                | [] -> failwith "Expected more than 0 elements"
+                | hd::[] -> hd
+                | _::_::_ -> failwith <| sprintf "Expected set %A to contain only a single element" set
+
     (*
 let rec fillHand origHand newHand = 
     match newHand with
