@@ -89,45 +89,68 @@ module ActionTests =
                             Utils.allCards player |> should not' (contain feast)
                             
     let militiaInitialCard = Coin Copper
-    let militiaGame = GameState.getIdRange protoGame 
-                        |> Seq.fold (fun game playerId -> GameState.updatePlayer playerId 
-                                                            (fun player -> {player with hand = List.replicate (MILITIA_DRAW_DOWN_COUNT + 2)
-                                                                                                militiaInitialCard})
-                                                           game) protoGame
+    let militiaGame = 
+        GameState.getIdRange protoGame 
+        |> Seq.fold (fun game playerId -> GameState.updatePlayer
+                                            playerId 
+                                            (fun player -> {player with hand = List.replicate (MILITIA_DRAW_DOWN_COUNT + 2) militiaInitialCard})
+                                            game)
+                    protoGame
 
-    let [<Test>] ``militia default reaction`` () = let actorId = PId 0
-                                                   let initialHandSize = List.length (GameState.getPlayer actorId militiaGame).hand
-                                                   let afterAction = militiaGame
-                                                                        |> withActionCard actorId Militia
-                                                                        |> GameStateUpdate.act actorId AMilitia
-                                                   match afterAction.players with
-                                                   | hd::tl -> List.length hd.hand |> should equal initialHandSize
-                                                               List.iter
-                                                                (fun player -> List.length player.hand
-                                                                               |> should equal MILITIA_DRAW_DOWN_COUNT) tl
-                                                   | [] -> failwith "players should be a non-empty list"
+    let [<Test>] ``militia default reaction`` () =
+        let aId = PId 0
+        let initialHandSize = List.length (GameState.getPlayer aId militiaGame).hand
+        militiaGame
+        |> withActionCard aId Militia
+        |> GameStateUpdate.act aId AMilitia
+        |> GameState.getPlayers       
+        |> Utils.withIndices
+        |> List.iter (fun (pId, player) -> List.length player.hand |> should equal
+                                           <| if PId pId = aId 
+                                              then initialHandSize                    
+                                              else MILITIA_DRAW_DOWN_COUNT)
                                                    
-    let [<Test>] ``militia too few cards returned`` () = 
+    let [<Test>] ``militia too few cards returned by defender`` () = 
         let actorId = PId 0
         let targetId = PId 1
         (militiaGame 
         |> GameState.updatePlayer targetId
-            (fun player -> {player with militiaReaction = (fun _ -> (Some <| militiaInitialCard, None, None))})
+            (fun player -> {player with militiaReaction = (fun _ -> (Some militiaInitialCard, None, None))})
         |> withActionCard actorId Militia
         |> GameStateUpdate.act actorId AMilitia
         |> GameState.getPlayer targetId).hand
         |> should equal (List.replicate MILITIA_DRAW_DOWN_COUNT militiaInitialCard)
 
-    let [<Test>] ``militia illegal cards returned`` () =
+    let [<Test>] ``militia illegal cards returned by defender`` () =
         let actorId = PId 0
         let targetId = PId 1
-        (militiaGame 
+        let illegalCard = Some <| Victory Province
+        militiaGame 
         |> GameState.updatePlayer targetId
-            (fun player -> {player with militiaReaction = (fun _ -> (Some (Victory Province), Some (Victory Province), Some (Victory Province)))})
+            (fun player -> {player with militiaReaction = (fun _ -> illegalCard, illegalCard, illegalCard)})
         |> withActionCard actorId Militia
         |> GameStateUpdate.act actorId AMilitia
-        |> GameState.getPlayer targetId).hand
+        |> GameState.getPlayer targetId
+        |> GameState.getHand
         |> should equal (List.replicate MILITIA_DRAW_DOWN_COUNT militiaInitialCard)
+        
+    let [<Test>] ``militia blocked by moat`` () =
+        let aId = PId  1
+        let targetId = PId 0
+        let game = militiaGame
+                    |> GameState.updatePlayer targetId (fun player -> {player with hand=(Action Moat)::player.hand;
+                                                                                   militiaReaction = function 
+                                                                                                     | a::b::c::_ -> (Some a, Some b, Some c)
+                                                                                                     | a::b::[] -> (Some a, Some b, None)
+                                                                                                     | a::[] -> (Some a, None, None)
+                                                                                                     | [] -> (None, None, None)})
+        let origTargetHand = (GameState.getPlayer targetId game).hand
+        game
+        |> withActionCard aId Militia
+        |> GameStateUpdate.act aId AMilitia 
+        |> GameState.getPlayer targetId
+        |> GameState.getHand
+        |> memberEquals origTargetHand
 
     let [<Test>] ``moneylender trash copper`` () = let id = PId 1
                                                    let initialCopperCount = countCards id protoGame (Coin Copper) + 1
@@ -188,15 +211,16 @@ module ActionTests =
                                                        afterAction.hand |> should contain toRemodel
                                                        afterAction.discard |> should not' (contain toGain)
 
-    let [<Test>] ``smithy test`` () =  let id = PId 0
-                                       let hand = List.replicate 5 (Coin Copper)
-                                       let deck = List.replicate 4 (Victory Estate)
-                                       (protoGame
-                                       |> GameState.updatePlayer id (fun player -> {player with hand = (Action Smithy)::hand; deck = deck})
-                                       |> BotHandler.GameStateUpdate.act id ASmithy
-                                       |> GameState.getPlayer id).hand
-                                       |> Set.ofList
-                                       |> should equal ((hand @ (List.toSeq deck |> Seq.take SMITHY_CARDS_DRAW |> Seq.toList)) |> Set.ofList)
+    let [<Test>] smithy () =  
+        let aId = PId 0
+        let hand = List.replicate 5 (Coin Copper)
+        let deck = List.replicate 4 (Victory Estate)
+        protoGame
+        |> GameState.updatePlayer aId (fun player -> {player with hand = (Action Smithy)::hand; deck = deck})
+        |> BotHandler.GameStateUpdate.act aId ASmithy
+        |> GameState.getPlayer aId
+        |> GameState.getHand
+        |> memberEquals <| hand @ (List.toSeq deck |> Seq.take SMITHY_CARDS_DRAW |> Seq.toList)
 
     let [<Test>] spy () =
         let aId = PId 0

@@ -14,9 +14,10 @@
 
     module GameStateUpdate =
         let act pId (actCard : argActCard) gameState =
-            let withTurn = GameState.withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions - 1} gameState 
-            let afterAction = (ActionCards.actionOfCard actCard) pId withTurn
-            afterAction |> GameState.safeDiscard (Action <| Definitions.getRaw actCard) pId
+            gameState
+            |> GameState.withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions - 1}
+            |> (ActionCards.actionOfCard actCard) pId
+            |> GameState.safeDiscard (Action <| Definitions.getRaw actCard) pId
 
         let buy pId card gameState = let availableMoney = GameState.totalPurchasingPower pId gameState
                                      let cost = cardCost card 

@@ -44,15 +44,15 @@ let rec actionOfCard = function
                                                             |> GameState.trash (Action Feast) pId
                                                             |> GameState.gainCard toGain pId
 
-  | AMilitia -> fun id gameState -> GameState.getIdRange gameState
-                                    |> Seq.filter (fun x -> x <> id)
-                                    |> Seq.fold (fun game id -> GameState.updatePlayer id
+  | AMilitia -> fun aId gameState -> GameState.getIdRange gameState
+                                    |> Seq.filter (fun pId -> pId <> aId && not <| GameState.hasMoat pId gameState)
+                                    |> Seq.fold (fun game pId -> GameState.updatePlayer pId
                                                                     (fun player -> let card1, card2, card3 = player.militiaReaction player.hand
                                                                                    let drawnDownHand = Utils.withoutNone [card1; card2; card3]
                                                                                                        |> Utils.ensureSubset player.hand
                                                                                                        |> Utils.fillHand player.hand
                                                                                    {player with hand = drawnDownHand}) game)
-                                        gameState
+                                                gameState
   
   | AMoneylender -> fun id gameState -> if not (Utils.listMem (GameState.getPlayer id gameState).hand (Coin Copper))
                                            then gameState
@@ -113,8 +113,8 @@ let rec actionOfCard = function
                                                     |> GameState.updatePlayer aId (fun player -> {player with hand = (Coin toGain)::player.hand})
                                     
   | AWitch -> fun aId gameState -> Seq.fold (fun game pId -> match pId with
-                                                              | x when x = aId -> GameState.drawFor WITCH_DRAW_COUNT aId game
-                                                              | x when GameState.hasMoat x game -> game
+                                                              | _id when _id = aId -> GameState.drawFor WITCH_DRAW_COUNT aId game
+                                                              | _id when GameState.hasMoat _id game -> game
                                                               | _ -> GameState.addCards WITCH_CURSE_COUNT pId (Victory Curse) game)
                                             gameState
                                             <| GameState.getIdRange gameState
