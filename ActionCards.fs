@@ -12,7 +12,7 @@ type action = int -> gameState -> gameState
    instead of just flatly rejecting ill-formed actions. *)
 (* there are many edge cases that this probably doesn't have correct behavior for *)
 let rec actionOfCard = function
-  | ASmithy -> fun id gameState -> GameState.updatePlayer id (GameState.draw SMITHY_CARDS_DRAW) gameState
+  | ASmithy -> fun aId -> GameState.drawFor SMITHY_CARDS_DRAW aId 
   | ACellar toDiscard -> fun id gameState -> List.fold (fun gameState card -> gameState
                                                                                 |> GameState.discard card id
                                                                                 |> GameState.drawFor 1 id)
@@ -228,4 +228,4 @@ let rec actionOfCard = function
                                                                                             deck = victory::player.deck})
                 gameState
 
-    | unrecognized -> failwith <| sprintf "unrecognized action card: %A" unrecognized
+    | AMoat -> fun aId -> GameState.drawFor MOAT_CARD_COUNT aId

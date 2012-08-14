@@ -178,6 +178,21 @@ module ActionTests =
         |> GameState.getHand
         |> memberEquals origTargetHand
 
+    (* attack card tests verify that they are blocked by the moat *)
+    let [<Test>] moat () =
+        let aId = PId 0
+        let preHandLen = protoGame
+                            |> GameState.getPlayer aId
+                            |> GameState.getHand
+                            |> List.length
+        protoGame
+        |> withActionCard aId Moat
+        |> GameStateUpdate.act aId AMoat
+        |> GameState.getPlayer aId
+        |> GameState.getHand
+        |> List.length
+        |> should equal <| preHandLen + MOAT_CARD_COUNT
+
     let [<Test>] ``moneylender trash copper`` () = let id = PId 1
                                                    let initialCopperCount = countCards id protoGame (Coin Copper) + 1
                                                    let afterAction = (protoGame 
