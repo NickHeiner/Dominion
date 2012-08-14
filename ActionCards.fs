@@ -132,19 +132,22 @@ let rec actionOfCard = function
                                                      | _ -> helper soFar notTreasure {player with deck = Utils.shuffle player.discard; discard = []}
                               GameState.updatePlayer aId (helper [] [])
 
-  | ASpy (SpyChoice (chooseSelfCard, chooseOtherCard)) -> fun aId gameState -> gameState
-                                                                                |> GameState.drawFor SPY_CARD_COUNT aId
-                                                                                |> GameState.foldPlayers
-                                                                                    (fun pId player -> let choice =
-                                                                                                        if pId = aId 
-                                                                                                        then chooseSelfCard
-                                                                                                        else chooseOtherCard
-                                                                                                       match player.deck with
-                                                                                                        | hd::tl -> match choice hd with
-                                                                                                                    | Discard -> {player with deck = tl; discard = hd::player.discard}
-                                                                                                                    | NoDiscard -> player
-                                                                (* TODO shouldn't this look into the discard if the deck is empty? *)
-                                                                                                        | [] -> player)
+  | ASpy (SpyChoice (chooseSelfCard, chooseOtherCard)) ->
+        fun aId gameState ->
+            gameState
+            |> GameState.drawFor SPY_CARD_COUNT aId
+            |> GameState.foldPlayers
+                (fun pId player -> if pId <> aId
+                                        && GameState.hasMoat pId gameState
+                                    then player
+                                    else
+                                        let choice = if pId = aId then chooseSelfCard else chooseOtherCard
+                                        match player.deck with
+                                        | hd::tl -> match choice hd with
+                                                    | Discard -> {player with deck = tl; discard = hd::player.discard}
+                                                    | NoDiscard -> player
+                                        (* TODO shouldn't this look into the discard if the deck is empty? *)
+                                        | [] -> player)
 
   | AThief (ThiefChoice (priorities, shouldGain)) ->
     fun aId gameState -> 

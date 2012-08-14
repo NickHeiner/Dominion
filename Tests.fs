@@ -224,18 +224,16 @@ module ActionTests =
 
     let [<Test>] spy () =
         let aId = PId 0
-        let f (x : card) = Discard
         let spy = ASpy <| SpyChoice ((function Victory _ -> Discard | _ -> NoDiscard), (function Victory _ -> NoDiscard | _ -> Discard))
         let selfDeckPrefix = [Victory Curse; Coin Copper]
         let selfDeckSuffix = [Victory Estate]
         let otherDeck = [Coin Gold]
-        ((Seq.fold (fun game pId -> (if pId = aId 
-                                     then GameState.updatePlayer pId
-                                            (fun player -> {player with hand = [Action Spy]; deck = selfDeckPrefix @ selfDeckSuffix; discard = []})
-                                     else GameState.updatePlayer pId
-                                            (fun player -> {player with deck = otherDeck; discard = []})) game) protoGame
-        <| GameState.getIdRange protoGame) 
-        |> GameStateUpdate.act aId spy).players
+        protoGame
+        |> GameState.foldPlayers (fun pId player -> (if pId = aId 
+                                                     then {player with hand = [Action Spy]; deck = selfDeckPrefix @ selfDeckSuffix; discard = []}
+                                                     else {player with deck = otherDeck; discard = []}))
+        |> GameStateUpdate.act aId spy
+        |> GameState.getPlayers
         |> Utils.withIndices
         |> List.iter (fun (pId, player) -> if PId pId = aId
                                            then 
@@ -244,10 +242,23 @@ module ActionTests =
                                            else 
                                                 player.deck |> should equal []
                                                 player.discard |> should equal otherDeck)
-                                                
+
+    let [<Test>] ``spy blocked by moat`` () =
+        let aId = PId 0
+        let tId = PId 1
+        let spy = ASpy <| SpyChoice ((function Victory _ -> Discard | _ -> NoDiscard), (function Victory _ -> NoDiscard | _ -> Discard))
+        let preGame = protoGame
+                        |> GameState.updatePlayer tId
+                            (fun player -> {player with hand=(Action Moat)::player.hand; deck=[Coin Silver]; discard=[]}) 
+        let prePlayer = GameState.getPlayer tId preGame
+        preGame
+        |> withActionCard aId Spy
+        |> GameStateUpdate.act aId spy
+        |> GameState.getPlayer tId
+        |> should equal prePlayer
+                                                        
     let [<Test>] ``spy deck empty`` () =
         let aId = PId 0
-        let f (x : card) = Discard
         let spy = ASpy <| SpyChoice ((function Victory _ -> Discard | _ -> NoDiscard), (function Victory _ -> NoDiscard | _ -> Discard))
         let selfDeckPrefix = [Coin Copper]
         let selfDeckSuffix = [Victory Estate]
@@ -271,7 +282,6 @@ module ActionTests =
                                                 
     let [<Test>] ``spy discard self, keep other`` () =
         let aId = PId 0
-        let f (x : card) = Discard
         let spy = ASpy <| SpyChoice ((function Victory _ -> Discard | _ -> NoDiscard), (function Victory _ -> NoDiscard | _ -> Discard))
         let selfDeckPrefix = [Victory Estate]
         let selfDeckSuffix = [Action Smithy]
