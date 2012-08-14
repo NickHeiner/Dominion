@@ -303,7 +303,7 @@ module ActionTests =
                                                 player.deck |> should equal otherDeck
                                                 player.discard |> should equal [])
     
-    let thiefTest shouldGain actorDeck =
+    let thiefTest shouldGain actorDeck targetDeck targetDiscard startHand =
         let aId = PId 0
         let priorities = function
                             | Gold -> First
@@ -311,7 +311,7 @@ module ActionTests =
                             | Copper -> Third
         let afterAction = 
             (protoGame
-            |> GameState.foldPlayers (fun pId player -> {player with deck = [Coin Copper; Coin Copper]; hand = []; discard = []})
+            |> GameState.foldPlayers (fun pId player -> {player with deck = [Coin Copper; Coin Copper]; hand = startHand; discard = []})
             |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Thief]})
             |> GameStateUpdate.act aId (AThief <| ThiefChoice (priorities, shouldGain)))
         afterAction.players
@@ -320,13 +320,19 @@ module ActionTests =
                                            then
                                             player.discard |> memberEquals <| actorDeck 
                                            else
-                                            player.discard |> should equal [Coin Copper];
-                                            player.deck |> should equal [];
-                                            player.hand |> should equal [])
+                                            player.discard |> should equal targetDiscard;
+                                            player.deck |> should equal targetDeck;
+                                            player.hand |> should equal startHand)
     
     let [<Test>] ``thief should gain`` () = thiefTest (fun _ -> Gain)
-                                                ((Action Thief)::(List.replicate (List.length protoGame.players - 1) (Coin Copper)))
-    let [<Test>] ``thief should not gain`` () = thiefTest (fun _ -> NoGain) [Action Thief]
+                                                      ((Action Thief)::(List.replicate (List.length protoGame.players - 1) (Coin Copper)))
+                                                      []
+                                                      [Coin Copper]
+                                                      []
+
+    let [<Test>] ``thief should not gain`` () = thiefTest (fun _ -> NoGain) [Action Thief] [] [Coin Copper] []
+
+    let [<Test>] ``thief blocked by moat`` () = thiefTest (fun _ -> NoGain) [Action Thief] [Coin Copper; Coin Copper] [] [Action Moat]
         
     let [<Test>] ``thief no treasure`` () = 
         let aId = PId 1

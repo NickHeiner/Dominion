@@ -151,7 +151,7 @@ let rec actionOfCard = function
 
   | AThief (ThiefChoice (priorities, shouldGain)) ->
     fun aId gameState -> 
-        List.fold (fun game pId -> if pId = aId
+        List.fold (fun game pId -> if pId = aId || GameState.hasMoat pId game
                                    then game
                                    else 
                                         let withCardCount = GameState.ensureCardCountInDeck pId THIEF_CARD_COUNT game
