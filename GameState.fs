@@ -74,6 +74,7 @@ let getIdRange gameState = { 0 .. List.length gameState.players - 1} |> Seq.map 
     
 (* TODO this needs to take into account global card counts *)
 let addCards count pId card = updatePlayer pId (fun player -> {player with discard = (List.replicate count card)@player.discard})
+let addCardToDeck pId card = updatePlayer pId (fun player -> {player with deck = card::player.deck})
 
 let foldPlayers f gameState = Seq.fold (fun game pId -> updatePlayer pId (f pId) game) gameState <| getIdRange gameState
 

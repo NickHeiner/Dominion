@@ -16,6 +16,32 @@ module ActionTests =
     let useAction pId card = protoGame |> withActionCard pId (Definitions.getRaw card) |> GameStateUpdate.act pId card
     let countCards pId game card = Utils.countOccurences (GameState.getPlayer pId game |> GameState.getHand) card
 
+    let [<Test>] bureaucrat () = 
+        let aId = PId 1
+        let victory = Victory Province
+        protoGame
+        |> GameState.foldPlayers (fun pId player -> if pId = aId
+                                                    then {player with hand=[Action Bureaucrat]; deck=[Victory Gardens]}
+                                                    else {player with hand=[victory]; deck=[Coin Copper]})
+        |> GameStateUpdate.act aId ABureaucrat
+        |> GameState.getPlayers
+        |> Utils.withIndices
+        |> List.iter (fun (pId, player) -> List.head player.deck |> should equal (if PId pId = aId then BUREAUCRAT_CARD_GAIN else victory))
+
+    let bureaucratTest preHand =
+        let aId = PId 1
+        protoGame
+        |> GameState.foldPlayers (fun pId player -> if pId = aId
+                                                    then {player with hand=[Action Bureaucrat]; deck=[Victory Gardens]}
+                                                    else {player with hand=preHand; deck=[Coin Copper]})
+        |> GameStateUpdate.act aId ABureaucrat
+        |> GameState.getPlayers
+        |> Utils.withIndices
+        |> List.iter (fun (pId, player) -> if PId pId <> aId then player.hand |> memberEquals preHand)
+    
+    let [<Test>] ``bureaucrat blocked by moat`` () = bureaucratTest [Victory Gardens; Action Moat]
+    let [<Test>] ``bureaucrat defender no victory`` () = bureaucratTest [Coin Copper; Coin Silver]
+
     let [<Test>] ``cellar no discard`` () = let pId = PId 0
                                             let cellar = ACellar []
                                             (protoGame

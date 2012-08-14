@@ -209,4 +209,23 @@ let rec actionOfCard = function
                                                then gameState
                                                else GameState.addCards 1 aId toGain gameState
 
+    
+    | ABureaucrat ->
+        fun aId gameState ->
+            GameState.foldPlayers
+                (fun pId player -> match pId with
+                                   | _id when _id = aId ->
+                                        (* It's a little frightening to use gameState, since we're folding over it and changing it each time.
+                                            However, each step of the fold should only update the player for that step, so there shouldn't
+                                            be any problems going back to an earlier step to grab this player. *)
+                                            gameState
+                                            |> GameState.addCardToDeck aId BUREAUCRAT_CARD_GAIN
+                                            |> GameState.getPlayer aId
+                                   | _id when GameState.hasMoat _id gameState -> player
+                                   | _ -> match List.tryFind (function Victory _ -> true | _ -> false) player.hand with
+                                                            |   None -> player
+                                                            |   Some victory -> {player with hand = Utils.withoutFirst ((=) victory) player.hand;
+                                                                                            deck = victory::player.deck})
+                gameState
+
     | unrecognized -> failwith <| sprintf "unrecognized action card: %A" unrecognized

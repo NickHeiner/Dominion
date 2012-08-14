@@ -62,15 +62,3 @@ let pick set = match Set.toList set with
                 | [] -> failwith "Expected more than 0 elements"
                 | hd::[] -> hd
                 | _::_::_ -> failwith <| sprintf "Expected set %A to contain only a single element" set
-
-    (*
-let rec fillHand origHand newHand = 
-    match newHand with
-    | card1::card2::card3::[] as hand -> hand
-    | items -> match origHand with
-               | [] -> items
-               | hd::tl -> let origHeadCount = memCount origHand |> Map.find hd
-                           match memCount newHand |> Map.tryFind hd with
-                           | Some count when count + 1 <= origHeadCount -> fillHand (hd::items) tl
-                           | None -> fillHand (hd::items) tl
-                           | _ -> fillHand items tl        *)
