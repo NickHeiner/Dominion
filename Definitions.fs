@@ -46,7 +46,7 @@ type argActCard = ACellar of card list | AChapel of card option * card option* c
                 | AChancellor of reshuffle | AVillage | AWoodcutter | AFeast of card | AMilitia | AMoneylender | ARemodel of card * card
                 | ASmithy | ASpy of spyChoice | AThief of thiefChoice | AThroneRoom of argActCard 
                 | ACouncilRoom | AFestival | ALaboratory | ALibrary of libraryChoice | AMarket
-                | AMine of CoinCard | AWitch | AAdventurer | AMoat | ABureaucrat | AWorkshop
+                | AMine of CoinCard | AWitch | AAdventurer | AMoat | ABureaucrat | AWorkshop of card
 
 let getRaw = function
                 | ACellar _ -> Cellar
@@ -72,7 +72,7 @@ let getRaw = function
                 | AAdventurer -> Adventurer
                 | AMoat -> Moat
                 | ABureaucrat -> Bureaucrat
-                | AWorkshop -> Workshop
+                | AWorkshop _ -> Workshop
 
 (* Turn for a player. purchasingPower doesn't include coins. *)
 type turn = {actions : int; buys : int; purchasingPower : int}

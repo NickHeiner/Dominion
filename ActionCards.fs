@@ -205,4 +205,8 @@ let rec actionOfCard = function
                         |> helper
             helper gameState
 
+    | AWorkshop toGain -> fun aId gameState -> if Constants.cardCost toGain > WOODCUTTER_CARD_GAIN_MAX_COST
+                                               then gameState
+                                               else GameState.addCards 1 aId toGain gameState
+
     | unrecognized -> failwith <| sprintf "unrecognized action card: %A" unrecognized

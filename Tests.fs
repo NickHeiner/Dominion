@@ -494,6 +494,26 @@ module ActionTests =
                                             | x when x = withMoat -> player.discard |> should not' (contain (Victory Curse))
                                             | _ ->                   player.discard |> should contain (Victory Curse))
 
+    let [<Test>] workshop () = 
+        let aId = PId 1
+        let toGain = Victory Gardens
+        protoGame
+        |> withActionCard aId Workshop
+        |> GameStateUpdate.act aId (AWorkshop toGain)
+        |> GameState.getPlayer aId
+        |> GameState.getDiscard
+        |> should contain toGain
+
+    let [<Test>] ``workshop card too expensive`` () = 
+        let aId = PId 1
+        let toGain = Victory Province
+        protoGame
+        |> withActionCard aId Workshop
+        |> GameStateUpdate.act aId (AWorkshop toGain)
+        |> GameState.getPlayer aId
+        |> GameState.getDiscard
+        |> should not' (contain toGain)
+    
     let [<Test>] adventurer () =
         let aId = PId 1
         let treasure1 = Coin Gold
