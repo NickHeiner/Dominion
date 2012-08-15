@@ -6,15 +6,22 @@ open Constants
 (* This would be defined in Constants if not for mutual recursion issues *)
 let initialTurn = {actions = 1; buys = 1; purchasingPower = 0}  
 
-let initialGameState = {players = []; cards = List.fold (fun acc el -> Map.add el (initialCount el) acc) Map.empty allCards; 
+let initialGameState = {players = []; cards = Map.empty; 
                         trash = []; currentTurn = initialTurn; turnsTaken = 0 }
+
+(* Resets the card counts to the initial amount of each card in `cards`. *)
+let withCards cards game = 
+    let playerCount = List.length game.players
+    {game with cards = List.fold (fun acc el -> Map.add el (initialCount playerCount el) acc) Map.empty cards}
 
 let nextTurn gameState = {gameState with currentTurn = initialTurn; turnsTaken = gameState.turnsTaken + 1}
 
 let getPlayer (PId index) gameState = List.nth gameState.players index
                             
-let updatePlayer ((PId index) as pId) (update : player -> player) gameState =
-  {gameState with players = getPlayer pId gameState |> update |> Utils.withNth gameState.players index}
+let updatePlayer ((PId index) as pId) update gameState =
+  {gameState with players = getPlayer pId gameState
+                            |> update
+                            |> Utils.withNth gameState.players index}
 
 let withTurn turn gameState = {gameState with currentTurn = turn}
 let addActions count gameState = withTurn {gameState.currentTurn with actions = gameState.currentTurn.actions + count} gameState
@@ -71,10 +78,22 @@ let trashFromDeck = removeCard (fun _ discard -> discard) (fun player deck -> {p
 let gainCard card id = updatePlayer id (fun player -> {player with discard = card::player.discard})
 
 let getIdRange gameState = { 0 .. List.length gameState.players - 1} |> Seq.map PId
-    
+
+let _addCardsForPlayer transformPlayer count pId card game = 
+    if not <| Map.containsKey card game.cards
+    then
+        invalidArg "card" <| sprintf "card %A is not in the game. Is it missing from the allCards set?" card
+    else
+        let priorCardCount = Map.find card game.cards
+        let amountToAdd = min count priorCardCount
+        {game with cards = Map.add card (priorCardCount - amountToAdd) game.cards}
+        |> updatePlayer pId (transformPlayer amountToAdd card)
+
 (* TODO this needs to take into account global card counts *)
-let addCards count pId card = updatePlayer pId (fun player -> {player with discard = (List.replicate count card)@player.discard})
-let addCardToDeck pId card = updatePlayer pId (fun player -> {player with deck = card::player.deck})
+let addCards = _addCardsForPlayer (fun amountToAdd card player -> {player with discard = (List.replicate amountToAdd card)@player.discard})
+let addCardToDeck = _addCardsForPlayer
+                        (fun amountToAdd card player -> if amountToAdd = 0 then player else {player with deck = card::player.deck})
+                        1
 
 let foldPlayers f gameState = Seq.fold (fun game pId -> updatePlayer pId (f pId) game) gameState <| getIdRange gameState
 

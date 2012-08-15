@@ -5,8 +5,6 @@ open Constants
 
 type action = int -> gameState -> gameState
 
-(* TODO these fail to take Moat into account *)
-
 (* Maybe validation should be separated out from the actual action logic.
    One advantage of not separating it out is that it's easier to be more generous with fall-back behavior, 
    instead of just flatly rejecting ill-formed actions. *)

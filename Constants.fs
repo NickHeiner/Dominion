@@ -2,6 +2,9 @@
 
 open Definitions
 
+(* Cards that every game starts with *)
+let STARTING_CARDS = [Victory Province; Victory Duchy; Victory Estate; Victory Curse; Coin Gold; Coin Silver; Coin Copper]
+
 let TURN_LIMIT = 10000
 
 (* How many cards are required for a single garden to be worth a single point *)
@@ -94,13 +97,11 @@ let victoryPointsFor = function
   | _ -> 0
 
 (* Note: only a set of actions should have initial count 10; the rest have initial count 0 *)
-let initialCount = function
+let initialCount playerCount = function
   | Victory v -> match v with
-                  | Province -> 12 
-                  | Duchy -> 12 
-                  | Estate -> 24 
-                  | Gardens -> 12
-                  | Curse -> 30 
+                  | Province | Duchy | Estate | Gardens when playerCount = 2 -> 8
+                  | Province | Duchy | Estate | Gardens -> 12
+                  | Curse -> playerCount * 10 - 10 
   | Coin c -> match c with 
                   | Gold -> 30 
                   | Silver -> 40 

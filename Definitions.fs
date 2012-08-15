@@ -98,4 +98,4 @@ type gameState = {players : player list; cards : Map<card, int>; trash : card li
 
 (* this there a better way to enumerate over all members of the type? *)
 (* http://stackoverflow.com/questions/10867544/map-over-all-values-in-a-discriminated-union *)
-let allCards = [Victory Province; Victory Duchy; Victory Estate; Coin Gold; Coin Silver; Coin Copper; Action Smithy]
+(* let allCards = [Victory Province; Victory Duchy; Victory Estate; Victory Curse; Coin Gold; Coin Silver; Coin Copper; Action Smithy] *)

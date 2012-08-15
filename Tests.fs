@@ -7,6 +7,7 @@ open Constants
 open BotHandler
 
 let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [])))
+                |> GameState.withCards STARTING_CARDS
 
 let memberEquals items1 items2 = List.sort items1 |> should equal <| List.sort items2
 
@@ -539,6 +540,7 @@ module ActionTests =
         let aId = PId 1
         let toGain = Victory Gardens
         protoGame
+        |> GameState.withCards ((Victory Gardens)::STARTING_CARDS)
         |> withActionCard aId Workshop
         |> GameStateUpdate.act aId (AWorkshop toGain)
         |> GameState.getPlayer aId
@@ -701,7 +703,7 @@ module BotTests =
                                                           let toBuy = Victory Estate
                                                           let afterBuy = doBuy id toBuy
                                                           afterBuy.cards |> Map.find toBuy |> should equal
-                                                             ((GameState.initialGameState.cards |> Map.find toBuy) - 1)
+                                                             ((protoGame.cards |> Map.find toBuy) - 1)
 
             let [<Test>] ``buy lowers purchasing power`` () = let id = PId 0
                                                               let toBuy = Victory Estate
@@ -741,6 +743,17 @@ module GameStateTests =
         |> GameState.getPlayer pId
         |> Utils.allCards
         |> should equal []
+
+    let [<Test>] ``can't draw more cards than the starting amount`` () =
+        let card = Action Smithy
+        let pId = PId 0
+        let playerCount = List.length protoGame.players
+        protoGame
+        |> GameState.withCards [card]
+        |> GameState.addCards ((initialCount playerCount card) + 1) pId card
+        |> GameState.getPlayer pId
+        |> GameState.getDiscard
+        |> should equal <| List.replicate (initialCount playerCount card) card
 
     let [<Test>] discard () = let id = PId 0
                               let toDiscard = Victory Estate
@@ -808,7 +821,7 @@ module GameTests =
                                             |> should equal 4
 
     module GameOverTests =
-        let [<Test>] ``game not over initially`` () = Dominion.Game.gameOver GameState.initialGameState |> should be False
+        let [<Test>] ``game not over initially`` () = Dominion.Game.gameOver protoGame |> should be False
     
         let [<Test>] ``game over after turn limit`` () = Dominion.Game.gameOver
                                                             {GameState.initialGameState with turnsTaken = Constants.TURN_LIMIT + 1}
@@ -819,14 +832,14 @@ module GameTests =
                                                                     cards = Map.add (Victory Province) 0 GameState.initialGameState.cards}
                                                             |> should be True
 
-        let [<Test>] ``game over when three cards gone`` () = let cards = GameState.initialGameState.cards 
+        let [<Test>] ``game over when three cards gone`` () = let cards = protoGame.cards 
                                                                             |> Map.add (Victory Estate) 0
                                                                             |> Map.add (Coin Copper) 0
                                                                             |> Map.add (Action Smithy) 0
                                                               Dominion.Game.gameOver {GameState.initialGameState with cards = cards}
                                                             |> should be True
 
-        let [<Test>] ``game not over when two cards gone`` () = let cards = GameState.initialGameState.cards 
+        let [<Test>] ``game not over when two cards gone`` () = let cards = protoGame.cards 
                                                                             |> Map.add (Victory Estate) 0
                                                                             |> Map.add (Action Smithy) 0
                                                                 Dominion.Game.gameOver {GameState.initialGameState with cards = cards}
