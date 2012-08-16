@@ -7,6 +7,8 @@ let STARTING_CARDS = [Victory Province; Victory Duchy; Victory Estate; Victory C
 
 let TURN_LIMIT = 10000
 
+let GAMES_TO_PLAY = 10
+
 (* How many cards are required for a single garden to be worth a single point *)
 let GARDENS_FACTOR = 10
 

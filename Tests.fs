@@ -799,6 +799,8 @@ module GameTests =
         let bot = [], []
         (Dominion.Game.getInitialState [("Foo", bot)]).players |> List.length |> should equal 1
 
+    let [<Test>] ``the game is over when playGame completes`` () = Dominion.Game.playGame () |> Dominion.Game.gameOver |> should be True
+
     module ScorePlayerTests =
         let [<Test>] ``simple score`` () = Dominion.Game.score 
                                             {Constants.initialPlayer with hand=[Victory Estate];

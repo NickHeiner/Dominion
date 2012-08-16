@@ -13,10 +13,18 @@ let withNth items index item =
 let countOccurences list item = List.filter (fun x -> x = item) list |> List.length
 
 (* Returns a list with the same elements as the original but in randomized order *)
-let shuffle items = items
+let shuffle items = 
+    (* It's necessary to construct a single rand instance and reuse it.
+       http://stackoverflow.com/questions/11975161/f-system-random-next-returning-the-same-result *)
+    let rand = System.Random()
+    items
+    |> List.map (fun x -> (x, rand.Next()))
+    |> List.sortBy snd
+    |> List.map fst
 
 let listMem list item = List.exists ((=) item) list
 
+(* Is this really necessary? Could List.iteri be used instead? *)
 let withIndices items = Seq.zip (seq { 0 .. List.length items}) (items |> List.toSeq) |> Seq.toList
 
 let prettyPrintCardCounts cardCounts = cardCounts

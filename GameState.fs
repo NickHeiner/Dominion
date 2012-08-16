@@ -89,7 +89,6 @@ let _addCardsForPlayer transformPlayer count pId card game =
         {game with cards = Map.add card (priorCardCount - amountToAdd) game.cards}
         |> updatePlayer pId (transformPlayer amountToAdd card)
 
-(* TODO this needs to take into account global card counts *)
 let addCards = _addCardsForPlayer (fun amountToAdd card player -> {player with discard = (List.replicate amountToAdd card)@player.discard})
 let addCardToDeck = _addCardsForPlayer
                         (fun amountToAdd card player -> if amountToAdd = 0 then player else {player with deck = card::player.deck})
@@ -102,8 +101,7 @@ let deckLen pId gameState = getPlayer pId gameState
                             |> List.length
 
 (* Shuffles the entire discard into the deck if the deck currently has fewer than `count` cards *)
-let ensureCardCountInDeck pId count gameState = 
-                                                if deckLen pId gameState >= count
+let ensureCardCountInDeck pId count gameState = if deckLen pId gameState >= count
                                                 then gameState
                                                 else updatePlayer pId refillDeck gameState
 

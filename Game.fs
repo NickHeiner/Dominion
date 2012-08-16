@@ -43,19 +43,53 @@ module Game =
       (fun gameState (index, bot) ->
         let newPlayerWithBot = {Constants.initialPlayer with bot = bot}
         {gameState with players = newPlayerWithBot::gameState.players})
-        GameState.initialGameState 
+        (GameState.withCards STARTING_CARDS GameState.initialGameState)
+
+  let playGame () = Bot.bots |> getInitialState |> round 
+
+  let playGames () =
+    Async.Parallel [ for i in 0..GAMES_TO_PLAY  -> async { return playGame () } ]
+    |> Async.RunSynchronously
+    |> Array.toList
+
+  type playerStats = {name: string; score: float; cardCounts : Map<card, int>}
+
+  let cardCountsOfPlayer player = 
+    player
+    |> Utils.allCards 
+    |> Seq.ofList
+    |> Seq.countBy (fun x -> x)
+    |> Map.ofSeq
+
+  let gameToPlayerStats bots game =
+    List.map2 (fun player (name, _) -> {name = name; score = float <| score player; cardCounts = cardCountsOfPlayer player}) game.players bots
+    |> List.sortBy (fun stats -> stats.score)
+    |> List.rev
+
+  let printPlayerStats = List.iter (fun playerStats -> printfn "%s\t%f\n%s\n" playerStats.name
+                                                                playerStats.score
+                                                                (Utils.prettyPrintCardCounts playerStats.cardCounts))
 
   let main argv = 
-     System.Console.WriteLine("Dominion!")
-     let finalState = Bot.bots |> getInitialState |> round 
-     printfn "Final Scores:"
-     finalState.players
-       |> List.map (fun player -> (player, Utils.allCards player |> Seq.ofList |> Seq.countBy (fun x -> x) |> Map.ofSeq))
-       |> List.map (fun (player, cardCounts) -> (score player, cardCounts))
-       |> List.zip (List.map fst Bot.bots)
-       |> List.sortBy (fun (_, (score, _)) -> score)
-       |> List.rev
-       |> List.iter (fun (name, (score, cardCounts)) -> printfn "%s\t%d\n%s\n" name score (Utils.prettyPrintCardCounts cardCounts))
+     printfn "Dominion!"
+     printfn "Kicking off %d games..." GAMES_TO_PLAY
+     let allStats = playGames ()
+                 |> List.map (gameToPlayerStats Bot.bots)
+     let averageStats =
+        allStats
+         |> List.fold (@) []
+         |> Seq.groupBy (fun stats -> stats.name)
+         |> Seq.map (fun (name, statsList) -> {name = name;
+                                                score = Seq.averageBy (fun stats -> stats.score) statsList;
+                                                cardCounts = Map.empty})
+         |> Seq.toList
+
+     printfn "__________Average Stats__________"
+     printPlayerStats averageStats
+     allStats
+     |> List.iteri (fun index gameStats ->
+        printfn "__________Final Scores (Game %d):__________" index
+        printPlayerStats gameStats)
      ignore(System.Console.ReadLine())
      0
      
