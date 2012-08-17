@@ -48,7 +48,9 @@ module Game =
   let playGame () = Bot.bots |> getInitialState |> round 
 
   let playGames () =
-    Async.Parallel [ for i in 0..GAMES_TO_PLAY  -> async { return playGame () } ]
+    Async.Parallel [ for i in 0..GAMES_TO_PLAY  -> async { let result = playGame ()
+                                                           printf "."
+                                                           return result } ]
     |> Async.RunSynchronously
     |> Array.toList
 
@@ -67,37 +69,67 @@ module Game =
     |> List.sortBy (fun stats -> stats.score)
     |> List.rev
 
-  let printPlayerStats = List.iter (fun playerStats -> printfn "%s\t%f\n%s\n" playerStats.name
-                                                                playerStats.score
-                                                                (Utils.prettyPrintCardCounts playerStats.cardCounts))
+  let printPlayerStats tabCount = 
+      let tabs = List.replicate tabCount "\t"
+                 |> List.fold (+) ""
+      List.iter (fun playerStats -> printfn "%s%s\t%f\n%s%s\n" tabs 
+                                                               playerStats.name
+                                                               playerStats.score
+                                                               tabs 
+                                                               (Utils.prettyPrintCardCounts playerStats.cardCounts))
+                                                               
+  let aggregateCardCounts aggregate statsList = 
+      statsList
+        |> Seq.map (fun stats -> Map.toSeq stats.cardCounts)
+        |> Seq.fold Seq.append Seq.empty
+        |> Seq.groupBy fst
+        |> Seq.map (fun (card, cardCountPairs) -> card, Seq.map snd cardCountPairs)
+        |> aggregate
+        |> Map.ofSeq
 
-  let averageCardCounts statsList = 
-    statsList
-    |> Seq.map (fun stats -> Map.toSeq stats.cardCounts)
-    |> Seq.fold Seq.append Seq.empty
-    |> Seq.groupBy fst
-    |> Seq.map (fun (card, countSeq) -> card, Seq.averageBy (fun (_, count) -> float count) countSeq)
-    |> Map.ofSeq
+  let averageCardCounts = aggregateCardCounts
+                          <| Seq.map (fun (card, countSeq) -> card, Seq.average countSeq)
 
+  let minCardCounts statsList = aggregateCardCounts
+                                <| Seq.map (fun (card, countSeq) -> card, Seq.average countSeq)
+
+  
+  let getScore stats = stats.score
+  
   let main argv = 
      printfn "Dominion!"
-     printfn "Kicking off %d games..." GAMES_TO_PLAY
-     let allStats = playGames ()
-                 |> List.map (gameToPlayerStats Bot.bots)
-     printfn "__________Average Stats__________"
-     allStats
-     |> List.fold (@) []
-     |> Seq.groupBy (fun stats -> stats.name)
-     |> Seq.map (fun (name, statsList) -> {name = name;
-                                           score = Seq.averageBy (fun stats -> stats.score) statsList;
-                                           cardCounts = averageCardCounts statsList})
-     |> Seq.toList
-     |> printPlayerStats
+     printfn "Kicking off %d games" GAMES_TO_PLAY
+     let allStats = playGames () 
+                    |> List.map (gameToPlayerStats Bot.bots)
+     let statsByBot = 
+        allStats
+        |> List.fold (@) []
+        |> Seq.groupBy (fun stats -> stats.name)
+
+     let makeAggregateStats (name, getScore, getCardCounts) =
+        name, (statsByBot 
+                |> Seq.map (fun (name, statsSeq) -> {name = name;
+                                                      score = getScore statsSeq;
+                                                      cardCounts = getCardCounts statsSeq}))
+     
+     printfn ""
+
+     let aggregates = ["Average", (Seq.averageBy getScore), averageCardCounts;
+                       "Min", (fun statsSeq -> statsSeq |> Seq.map getScore |> Seq.min), averageCardCounts]
+                      |> List.map makeAggregateStats
+                      |> List.map (fun (name, seq) -> name, Seq.toList seq)
+
+     aggregates
+     |> List.map fst
+     |> List.iter (printf "__________%s_____________\t")
+     
+     List.iteri (fun index (_, stats) -> printPlayerStats index stats) aggregates
+                                        
      printfn "\n####################################################\n"
      allStats
      |> List.iteri (fun index gameStats ->
         printfn "__________Final Scores (Game %d):__________" index
-        printPlayerStats gameStats)
+        printPlayerStats 0 gameStats)
      ignore(System.Console.ReadLine())
      0
      
