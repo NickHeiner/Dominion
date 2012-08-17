@@ -29,7 +29,7 @@ let withIndices items = Seq.zip (seq { 0 .. List.length items}) (items |> List.t
 
 let prettyPrintCardCounts cardCounts = cardCounts
                                           |> Map.toList
-                                          |> List.map (fun (card, count) -> sprintf "\t%A\t%d" card count)
+                                          |> List.map (fun (card, count) -> sprintf "\t%A\t%f" card count)
                                           |> String.concat "\n"
 
 let allCards (player : Definitions.player) = player.hand @ player.discard @ player.deck

@@ -52,13 +52,14 @@ module Game =
     |> Async.RunSynchronously
     |> Array.toList
 
-  type playerStats = {name: string; score: float; cardCounts : Map<card, int>}
+  type playerStats = {name: string; score: float; cardCounts : Map<card, float>}
 
   let cardCountsOfPlayer player = 
     player
     |> Utils.allCards 
     |> Seq.ofList
     |> Seq.countBy (fun x -> x)
+    |> Seq.map (fun (card, count) -> card, float count)
     |> Map.ofSeq
 
   let gameToPlayerStats bots game =
@@ -70,22 +71,29 @@ module Game =
                                                                 playerStats.score
                                                                 (Utils.prettyPrintCardCounts playerStats.cardCounts))
 
+  let averageCardCounts statsList = 
+    statsList
+    |> Seq.map (fun stats -> Map.toSeq stats.cardCounts)
+    |> Seq.fold Seq.append Seq.empty
+    |> Seq.groupBy fst
+    |> Seq.map (fun (card, countSeq) -> card, Seq.averageBy (fun (_, count) -> float count) countSeq)
+    |> Map.ofSeq
+
   let main argv = 
      printfn "Dominion!"
      printfn "Kicking off %d games..." GAMES_TO_PLAY
      let allStats = playGames ()
                  |> List.map (gameToPlayerStats Bot.bots)
-     let averageStats =
-        allStats
-         |> List.fold (@) []
-         |> Seq.groupBy (fun stats -> stats.name)
-         |> Seq.map (fun (name, statsList) -> {name = name;
-                                                score = Seq.averageBy (fun stats -> stats.score) statsList;
-                                                cardCounts = Map.empty})
-         |> Seq.toList
-
      printfn "__________Average Stats__________"
-     printPlayerStats averageStats
+     allStats
+     |> List.fold (@) []
+     |> Seq.groupBy (fun stats -> stats.name)
+     |> Seq.map (fun (name, statsList) -> {name = name;
+                                           score = Seq.averageBy (fun stats -> stats.score) statsList;
+                                           cardCounts = averageCardCounts statsList})
+     |> Seq.toList
+     |> printPlayerStats
+     printfn "\n####################################################\n"
      allStats
      |> List.iteri (fun index gameStats ->
         printfn "__________Final Scores (Game %d):__________" index
