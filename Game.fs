@@ -77,13 +77,18 @@ module Game =
 
      (* Excel documentation http://msdn.microsoft.com/en-us/library/hh297098.aspx *)
      let app = new ApplicationClass(Visible = true)
-     let workbook = app.Workbooks.Add(XlWBATemplate.xlWBATWorksheet) 
-
+     let workbook = app.Workbooks.Add(XlWBATemplate.xlWBATWorksheet)
+     let firstWorksheet = workbook.Worksheets.[1] :?> Worksheet
+     firstWorksheet.Name <- "Analysis"
+      
      playGames () 
      |> List.map (gameToPlayerStats Bot.bots)
      |> Utils.flatten
      |> Seq.groupBy (fun playerStats -> playerStats.name)
      |> Seq.iter (fun (name, statsSeq) ->
+        (* This could all be done as a Map<int * int, obj> instead of imperatively, as it is here.
+           That would be in the functional style of the rest of the program, and easier to test.
+           However, it works already, so I'm just going to leave it. *)
         let worksheet = workbook.Worksheets.Add () :?> Worksheet
         worksheet.Name <- name
 
@@ -102,8 +107,10 @@ module Game =
                         |> Set.toArray
                         |> Array.map (sprintf "%A")
 
-        worksheet.Range(Utils.singleCellRange (Row 0) (Col 0)).Value2 <- "Score"
-        worksheet.Range(Utils.range (Row 0) (Col 1) (Row 0) (Col <| Array.length cardNames - 1)).Value2 <- cardNames
+        (* TODO this isn't writing in score anywhere, and the "game %d" labels are in the 0th col *)
+
+        worksheet.Range(Utils.singleCellRange (Row 0) (Col 1)).Value2 <- "Score"
+        worksheet.Range(Utils.range (Row 0) (Col 2) (Row 0) (Col <| Array.length cardNames)).Value2 <- cardNames
         
         let maxCol = Array.length cardNames
         let nonLabelCols = seq { 0 .. maxCol - 1} (* -1 because upper bound in for loop is not exclusive *)
@@ -112,8 +119,9 @@ module Game =
         |> Seq.iteri (fun index stats -> 
             let row = index + 1 (* +1 to leave room for the header *)
             worksheet.Range(Utils.singleCellRange (Row row) (Col 0)).Value2 <- sprintf "Game %d" index
+            worksheet.Range(Utils.singleCellRange (Row row) (Col 1)).Value2 <- stats.score
             for col in nonLabelCols do 
-                let cell = Utils.singleCellRange (Row row) (Col (col + 1)) (* +1 to leave room for game label *)
+                let cell = Utils.singleCellRange (Row row) (Col (col + 2)) (* +1 to leave room for game label; +1 for score *)
                 worksheet.Range(cell).Value2 <- cardCountsArr.[row - 1].[col]
             )
         
@@ -132,6 +140,8 @@ module Game =
              "Min", "min";
              "Max", "max";
              "StdDev", "STDEV.P"] (* tbh I don't know which stddev formula is best *)
-        )                   
+        )
+        
+     firstWorksheet.Activate ()                   
      0
      
