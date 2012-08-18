@@ -70,6 +70,7 @@ module Game =
     |> List.sortBy (fun stats -> stats.score)
     |> List.rev
 
+
   let main argv = 
      printfn "Dominion!"
      printfn "Kicking off %d games" GAMES_TO_PLAY
@@ -77,11 +78,48 @@ module Game =
      (* Excel documentation http://msdn.microsoft.com/en-us/library/hh297098.aspx *)
      let app = new ApplicationClass(Visible = true)
      let workbook = app.Workbooks.Add(XlWBATemplate.xlWBATWorksheet) 
-     let worksheet = workbook.Worksheets.[1] :?> Worksheet
-     worksheet.Name <- "Raw Data"
 
      playGames () 
      |> List.map (gameToPlayerStats Bot.bots)
+     |> Utils.flatten
+     |> Seq.groupBy (fun playerStats -> playerStats.name)
+     |> Seq.iter (fun (name, statsSeq) ->
+        let worksheet = workbook.Worksheets.Add () :?> Worksheet
+        worksheet.Name <- name
+
+        let cardCounts = statsSeq
+                        |> Seq.map (fun stats -> Map.toList stats.cardCounts)
+
+        let cardCountsArr = cardCounts
+                            |> Array.ofSeq
+                            |> Array.map (fun statSeq -> statSeq |> Seq.map snd |> Array.ofSeq)
+
+        let cardNames = cardCounts
+                        |> Seq.toList
+                        |> Utils.flatten
+                        |> List.map fst
+                        |> Set.ofList
+                        |> Set.toArray
+                        |> Array.map (sprintf "%A")
+
+        worksheet.Range(Utils.singleCellRange "A1").Value2 <- "Score"
+        worksheet.Range(sprintf "B1:%c1" <| 'B' + char (Array.length cardNames - 1)).Value2 <- cardNames
+        
+        statsSeq
+        |> Seq.iteri (fun index stats -> 
+            (* +1 because Excel is 1-indexed, and +1 to leave room for the header *)
+            let row = index + 2
+            worksheet.Range(Utils.singleCellRange <| sprintf "A%d" row).Value2 <- sprintf "Game %d" index
+            (* -1 because upper bound in for loop is not exclusive *)
+            for col in 0 .. Array.length cardNames - 1 do
+                (* +1 to leave room for game label *)
+                let cell = Utils.singleCellRange <| sprintf "%c%d" ('A' + char (col + 1)) row
+                worksheet.Range(cell).Value2 <- cardCountsArr.[row - 2].[col]
+            ) 
+        
+        )                   
+
+     (*
      |> List.iteri (fun index gameStats ->
         let maxCardCountLength =
             gameStats
@@ -116,6 +154,7 @@ module Game =
                                        (startRow + Array2D.length1 cellContents - 1)
 
         worksheet.Range(range).Value2 <- cellContents
-        )
+        *)
+        
      0
      

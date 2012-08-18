@@ -22,7 +22,11 @@ let shuffle items =
     |> List.sortBy snd
     |> List.map fst
 
+let singleCellRange cell = sprintf "%s:%s" cell cell
+
 let listMem list item = List.exists ((=) item) list
+
+let flatten l = List.fold (@) [] l
 
 (* Is this really necessary? Could List.iteri be used instead? *)
 let withIndices items = Seq.zip (seq { 0 .. List.length items}) (items |> List.toSeq) |> Seq.toList
