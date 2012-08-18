@@ -119,24 +119,19 @@ module Game =
         
         let dataRows = Seq.length statsSeq
         let lastRow = dataRows + 2 (* +1 for header; +1 for spacing *)
-
-        List.iteri
-            (fun index name -> worksheet.Range(Utils.singleCellRange (Row <| lastRow + index) (Col 0)).Value2 <- name)
-            ["Mean"; "Min"; "Max"; "Std Dev"]
-
         
         let setFormula formula row = for col in nonLabelCols do
                                         let formulaRange = Utils.range (Row row) (Col 1) (Row row) (Col maxCol)
                                         let sourceRange = Utils.range (Row 1) (Col col) (Row dataRows) (Col col)
                                         worksheet.Range(formulaRange).Value2 <- sprintf "=%s(%s)" formula sourceRange
 
-        setFormula "average" lastRow
-                                        
-        (* System.Runtime.InteropServices.SafeArrayTypeMismatchException was unhandled
-           HResult=-2146233037
-           Message=Specified array was not of the expected type.
-
-           fails: worksheet.Range(namesRange).Value2 <- aggrNames *)
+        List.iteri
+            (fun index (name, formula) -> worksheet.Range(Utils.singleCellRange (Row <| lastRow + index) (Col 0)).Value2 <- name
+                                          setFormula formula <| lastRow + index)
+            ["Mean", "average";
+             "Min", "min";
+             "Max", "max";
+             "StdDev", "STDEV.P"] (* tbh I don't know which stddev formula is best *)
         )                   
      0
      
