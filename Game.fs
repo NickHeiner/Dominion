@@ -94,15 +94,16 @@ module Game =
             |> List.map fst
             |> Set.ofList
             |> Set.toArray
+        let onlyHeader str = if index = 0 then str else ""
         let gameStatsArr = Array.ofList gameStats
         let cellContents =
             Array2D.init (ROW_OFFSET + List.length gameStats)
                          (COL_OFFSET + maxCardCountLength)
                          (fun row col -> match row, col with
                                          | 0, 0 -> box <| sprintf "Game %d" index
-                                         | 0, 1 -> box "Score"
+                                         | 0, 1 -> box <| onlyHeader "Score"
+                                         | 0, c -> box <| onlyHeader (sprintf "%A" cards.[c - COL_OFFSET])
                                          | r, 0 -> box gameStatsArr.[r - ROW_OFFSET].name
-                                         | 0, c -> box <| sprintf "%A" cards.[c - COL_OFFSET]
                                          | r, 1 -> box gameStatsArr.[r - ROW_OFFSET].score 
                                          | r, c -> match Map.tryFind cards.[c - COL_OFFSET] gameStatsArr.[r - ROW_OFFSET].cardCounts with
                                                     | None -> box 0
