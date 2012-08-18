@@ -3,6 +3,7 @@ module Game =
 
   open Definitions
   open Constants
+  open Microsoft.Office.Interop.Excel
 
   let gameOver gameState = gameState.turnsTaken >= Constants.TURN_LIMIT
                             || Map.find (Victory Province) gameState.cards = 0
@@ -69,67 +70,50 @@ module Game =
     |> List.sortBy (fun stats -> stats.score)
     |> List.rev
 
-  let printPlayerStats tabCount = 
-      let tabs = List.replicate tabCount "\t"
-                 |> List.fold (+) ""
-      List.iter (fun playerStats -> printfn "%s%s\t%f\n%s%s\n" tabs 
-                                                               playerStats.name
-                                                               playerStats.score
-                                                               tabs 
-                                                               (Utils.prettyPrintCardCounts playerStats.cardCounts))
-                                                               
-  let aggregateCardCounts aggregate statsList = 
-      statsList
-        |> Seq.map (fun stats -> Map.toSeq stats.cardCounts)
-        |> Seq.fold Seq.append Seq.empty
-        |> Seq.groupBy fst
-        |> Seq.map (fun (card, cardCountPairs) -> card, Seq.map snd cardCountPairs)
-        |> aggregate
-        |> Map.ofSeq
-
-  let averageCardCounts = aggregateCardCounts
-                          <| Seq.map (fun (card, countSeq) -> card, Seq.average countSeq)
-
-  let minCardCounts statsList = aggregateCardCounts
-                                <| Seq.map (fun (card, countSeq) -> card, Seq.average countSeq)
-
-  
-  let getScore stats = stats.score
-  
   let main argv = 
      printfn "Dominion!"
      printfn "Kicking off %d games" GAMES_TO_PLAY
-     let allStats = playGames () 
-                    |> List.map (gameToPlayerStats Bot.bots)
-     let statsByBot = 
-        allStats
-        |> List.fold (@) []
-        |> Seq.groupBy (fun stats -> stats.name)
 
-     let makeAggregateStats (name, getScore, getCardCounts) =
-        name, (statsByBot 
-                |> Seq.map (fun (name, statsSeq) -> {name = name;
-                                                      score = getScore statsSeq;
-                                                      cardCounts = getCardCounts statsSeq}))
-     
-     printfn ""
+     (* Excel documentation http://msdn.microsoft.com/en-us/library/hh297098.aspx *)
+     let app = new ApplicationClass(Visible = true)
+     let workbook = app.Workbooks.Add(XlWBATemplate.xlWBATWorksheet) 
+     let worksheet = (workbook.Worksheets.[1] :?> Worksheet) 
 
-     let aggregates = ["Average", (Seq.averageBy getScore), averageCardCounts;
-                       "Min", (fun statsSeq -> statsSeq |> Seq.map getScore |> Seq.min), averageCardCounts]
-                      |> List.map makeAggregateStats
-                      |> List.map (fun (name, seq) -> name, Seq.toList seq)
-
-     aggregates
-     |> List.map fst
-     |> List.iter (printf "__________%s_____________\t")
-     
-     List.iteri (fun index (_, stats) -> printPlayerStats index stats) aggregates
-                                        
-     printfn "\n####################################################\n"
-     allStats
+     playGames () 
+     |> List.map (gameToPlayerStats Bot.bots)
      |> List.iteri (fun index gameStats ->
-        printfn "__________Final Scores (Game %d):__________" index
-        printPlayerStats 0 gameStats)
-     ignore(System.Console.ReadLine())
+        let maxCardCountLength =
+            gameStats
+            |> List.map (fun stats -> stats.cardCounts |> Map.toList |> List.length)
+            |> List.max
+        let cards = 
+            gameStats
+            |> List.map (fun stats -> stats.cardCounts |> Map.toList)
+            |> List.fold (@) []
+            |> List.map fst
+            |> Set.ofList
+            |> Set.toArray
+        let gameStatsArr = Array.ofList gameStats
+        let cellContents =
+            Array2D.init (ROW_OFFSET + List.length gameStats)
+                         (COL_OFFSET + maxCardCountLength)
+                         (fun row col -> match row, col with
+                                         | 0, 0 -> sprintf "Game %d" index
+                                         | 0, 1 -> "Score"
+                                         | r, 0 -> gameStatsArr.[r - ROW_OFFSET].name
+                                         | 0, c -> sprintf "%A" cards.[c - COL_OFFSET]
+                                         | r, 1 -> sprintf "%f" gameStatsArr.[r - ROW_OFFSET].score 
+                                         | r, c -> match Map.tryFind cards.[c - COL_OFFSET] gameStatsArr.[r - ROW_OFFSET].cardCounts with
+                                                    | None -> "0"
+                                                    | Some count -> sprintf "%f" count) 
+
+        let startRow = ((index * Array2D.length1 cellContents) + 1)
+        
+        let range = sprintf "A%d:%c%d" startRow
+                                       ('A' + char(Array2D.length2 cellContents - 1))
+                                       (startRow + Array2D.length1 cellContents - 1)
+
+        worksheet.Range(range).Value2 <- cellContents
+        )
      0
      
