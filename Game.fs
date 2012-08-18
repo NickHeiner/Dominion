@@ -102,59 +102,41 @@ module Game =
                         |> Set.toArray
                         |> Array.map (sprintf "%A")
 
-        worksheet.Range(Utils.singleCellRange "A1").Value2 <- "Score"
-        worksheet.Range(sprintf "B1:%c1" <| 'B' + char (Array.length cardNames - 1)).Value2 <- cardNames
+        worksheet.Range(Utils.singleCellRange (Row 0) (Col 0)).Value2 <- "Score"
+        worksheet.Range(Utils.range (Row 0) (Col 1) (Row 0) (Col <| Array.length cardNames - 1)).Value2 <- cardNames
         
+        let maxCol = Array.length cardNames
+        let nonLabelCols = seq { 0 .. maxCol - 1} (* -1 because upper bound in for loop is not exclusive *)
+
         statsSeq
         |> Seq.iteri (fun index stats -> 
-            (* +1 because Excel is 1-indexed, and +1 to leave room for the header *)
-            let row = index + 2
-            worksheet.Range(Utils.singleCellRange <| sprintf "A%d" row).Value2 <- sprintf "Game %d" index
-            (* -1 because upper bound in for loop is not exclusive *)
-            for col in 0 .. Array.length cardNames - 1 do
-                (* +1 to leave room for game label *)
-                let cell = Utils.singleCellRange <| sprintf "%c%d" ('A' + char (col + 1)) row
-                worksheet.Range(cell).Value2 <- cardCountsArr.[row - 2].[col]
-            ) 
+            let row = index + 1 (* +1 to leave room for the header *)
+            worksheet.Range(Utils.singleCellRange (Row row) (Col 0)).Value2 <- sprintf "Game %d" index
+            for col in nonLabelCols do 
+                let cell = Utils.singleCellRange (Row row) (Col (col + 1)) (* +1 to leave room for game label *)
+                worksheet.Range(cell).Value2 <- cardCountsArr.[row - 1].[col]
+            )
         
+        let dataRows = Seq.length statsSeq
+        let lastRow = dataRows + 2 (* +1 for header; +1 for spacing *)
+
+        List.iteri
+            (fun index name -> worksheet.Range(Utils.singleCellRange (Row <| lastRow + index) (Col 0)).Value2 <- name)
+            ["Mean"; "Min"; "Max"; "Std Dev"]
+
+        
+        let setFormula formula row = for col in nonLabelCols do
+                                        let formulaRange = Utils.range (Row row) (Col 1) (Row row) (Col maxCol)
+                                        let sourceRange = Utils.range (Row 1) (Col col) (Row dataRows) (Col col)
+                                        worksheet.Range(formulaRange).Value2 <- sprintf "=%s(%s)" formula sourceRange
+
+        setFormula "average" lastRow
+                                        
+        (* System.Runtime.InteropServices.SafeArrayTypeMismatchException was unhandled
+           HResult=-2146233037
+           Message=Specified array was not of the expected type.
+
+           fails: worksheet.Range(namesRange).Value2 <- aggrNames *)
         )                   
-
-     (*
-     |> List.iteri (fun index gameStats ->
-        let maxCardCountLength =
-            gameStats
-            |> List.map (fun stats -> stats.cardCounts |> Map.toList |> List.length)
-            |> List.max
-        let cards = 
-            gameStats
-            |> List.map (fun stats -> stats.cardCounts |> Map.toList)
-            |> List.fold (@) []
-            |> List.map fst
-            |> Set.ofList
-            |> Set.toArray
-        let onlyHeader str = if index = 0 then str else ""
-        let gameStatsArr = Array.ofList gameStats
-        let cellContents =
-            Array2D.init (ROW_OFFSET + List.length gameStats)
-                         (COL_OFFSET + maxCardCountLength)
-                         (fun row col -> match row, col with
-                                         | 0, 0 -> box <| sprintf "Game %d" index
-                                         | 0, 1 -> box <| onlyHeader "Score"
-                                         | 0, c -> box <| onlyHeader (sprintf "%A" cards.[c - COL_OFFSET])
-                                         | r, 0 -> box gameStatsArr.[r - ROW_OFFSET].name
-                                         | r, 1 -> box gameStatsArr.[r - ROW_OFFSET].score 
-                                         | r, c -> match Map.tryFind cards.[c - COL_OFFSET] gameStatsArr.[r - ROW_OFFSET].cardCounts with
-                                                    | None -> box 0
-                                                    | Some count -> box count) 
-
-        let startRow = ((index * Array2D.length1 cellContents) + 1)
-        
-        let range = sprintf "A%d:%c%d" startRow
-                                       ('A' + char(Array2D.length2 cellContents - 1))
-                                       (startRow + Array2D.length1 cellContents - 1)
-
-        worksheet.Range(range).Value2 <- cellContents
-        *)
-        
      0
      

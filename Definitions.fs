@@ -80,6 +80,9 @@ type turn = {actions : int; buys : int; purchasingPower : int}
 type act = Act of ActCard
 type buy = Buy of card
 
+type row = Row of int
+type col = Col of int
+
 type bot = argActCard list * buy list
 
 [<CustomEquality; NoComparisonAttribute>]
