@@ -77,7 +77,8 @@ module Game =
      (* Excel documentation http://msdn.microsoft.com/en-us/library/hh297098.aspx *)
      let app = new ApplicationClass(Visible = true)
      let workbook = app.Workbooks.Add(XlWBATemplate.xlWBATWorksheet) 
-     let worksheet = (workbook.Worksheets.[1] :?> Worksheet) 
+     let worksheet = workbook.Worksheets.[1] :?> Worksheet
+     worksheet.Name <- "Raw Data"
 
      playGames () 
      |> List.map (gameToPlayerStats Bot.bots)
@@ -98,14 +99,14 @@ module Game =
             Array2D.init (ROW_OFFSET + List.length gameStats)
                          (COL_OFFSET + maxCardCountLength)
                          (fun row col -> match row, col with
-                                         | 0, 0 -> sprintf "Game %d" index
-                                         | 0, 1 -> "Score"
-                                         | r, 0 -> gameStatsArr.[r - ROW_OFFSET].name
-                                         | 0, c -> sprintf "%A" cards.[c - COL_OFFSET]
-                                         | r, 1 -> sprintf "%f" gameStatsArr.[r - ROW_OFFSET].score 
+                                         | 0, 0 -> box <| sprintf "Game %d" index
+                                         | 0, 1 -> box "Score"
+                                         | r, 0 -> box gameStatsArr.[r - ROW_OFFSET].name
+                                         | 0, c -> box <| sprintf "%A" cards.[c - COL_OFFSET]
+                                         | r, 1 -> box gameStatsArr.[r - ROW_OFFSET].score 
                                          | r, c -> match Map.tryFind cards.[c - COL_OFFSET] gameStatsArr.[r - ROW_OFFSET].cardCounts with
-                                                    | None -> "0"
-                                                    | Some count -> sprintf "%f" count) 
+                                                    | None -> box 0
+                                                    | Some count -> box count) 
 
         let startRow = ((index * Array2D.length1 cellContents) + 1)
         
