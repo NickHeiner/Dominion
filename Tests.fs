@@ -691,29 +691,39 @@ module BotTests =
         |> should equal origHand
 
     let [<Test>] ``evalCond always`` () = 
-        BotHandler.evalCond initialPlayer Always
+        BotHandler.evalCond protoGame (PId 0) Always
         |> should be True
 
     let [<Test>] ``evalCond count in deck true`` () =
-        BotHandler.evalCond initialPlayer (CountInCardsLessThan (4, Action Smithy))
+        BotHandler.evalCond protoGame (PId 0) (CountInCardsLessThan (4, Action Smithy))
         |> should be True
 
     let [<Test>] ``evalCond count in deck false`` () =
         let count = 4
         let card = Action Smithy
         let cards = List.replicate count card
-        let player = {initialPlayer with deck = cards; hand = cards; discard = cards}
-        BotHandler.evalCond player (CountInCardsLessThan (count, card))
+        let pId = PId 0
+        let game = GameState.updatePlayer pId (fun p -> {p with deck = cards; hand = cards; discard = cards}) protoGame
+        BotHandler.evalCond game pId (CountInCardsLessThan (count, card))
         |> should be False
 
     let [<Test>] ``evalCond expected per hand true`` () =
-        BotHandler.evalCond initialPlayer (ExpectedPerHandLessThan (1.0, Action Smithy))
+        BotHandler.evalCond protoGame (PId 0) (ExpectedPerHandLessThan (1.0, Action Smithy))
         |> should be True
 
     let [<Test>] ``evalCond expected per hand false`` () =
         let card = Action Smithy
-        let player = {initialPlayer with deck = List.replicate 100 card}
-        BotHandler.evalCond player (ExpectedPerHandLessThan (1., Action Smithy))
+        let pId = PId 0
+        let game = GameState.updatePlayer pId (fun p -> {p with deck = List.replicate 100 card}) protoGame
+        BotHandler.evalCond game pId (ExpectedPerHandLessThan (1., Action Smithy))
+        |> should be False
+
+    let [<Test>] ``evalCond cards remaining true`` () =
+        BotHandler.evalCond {protoGame with cards = Map.empty} (PId 1) (CardsRemainingLessThan (1, Victory Province))
+        |> should be True
+
+    let [<Test>] ``evalCond cards remaining false`` () =
+        BotHandler.evalCond protoGame (PId 1) (CardsRemainingLessThan (4, Victory Province))
         |> should be False
 
     let [<Test>] ``find valid action`` () =

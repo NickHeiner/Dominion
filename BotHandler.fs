@@ -3,9 +3,12 @@
     open Definitions
     open Constants
 
-    let evalCond player = function
+    let evalCond gameState aId = function
         |   Always -> true
-        |   ExpectedPerHandLessThan (expected, card) -> let allCards = Utils.allCards player
+        |   ExpectedPerHandLessThan (expected, card) -> let allCards =
+                                                            gameState
+                                                            |> GameState.getPlayer aId
+                                                            |> Utils.allCards
                                                         let occurences = 
                                                             allCards
                                                             |> Utils.countOccurs card
@@ -15,8 +18,11 @@
                                                             |> List.length
                                                             |> float
                                                         total = 0. || expected > occurences / total
-        |  CountInCardsLessThan (count, card) -> count > (player |> Utils.allCards |> Utils.countOccurs card)
-    
+        |  CountInCardsLessThan (count, card) -> count > (gameState
+                                                            |> GameState.getPlayer aId
+                                                            |> Utils.allCards
+                                                            |> Utils.countOccurs card)
+        |  CardsRemainingLessThan (count, card) -> count > Utils.defaultFind card 0 gameState.cards
     
     let allCards gameState playerId = List.nth gameState.players playerId |> Utils.allCards
     let canBuy pId gameState card = GameState.totalPurchasingPower pId gameState >= Constants.cardCost card
@@ -42,13 +48,13 @@
                                                             with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card}
 
         let findFirstValidAction pId acts gameState =
-            match List.tryFind (fun (cond, actCard) -> evalCond (GameState.getPlayer pId gameState) cond
+            match List.tryFind (fun (cond, actCard) -> evalCond gameState pId cond
                                                        && canAct pId gameState actCard) acts with
                 | Some (_, argActCard) -> Some argActCard
                 | None -> None
 
         let findFirstValidBuy pId buys gameState = 
-            match List.tryFind (function (cond, card) -> evalCond (GameState.getPlayer pId gameState) cond
+            match List.tryFind (function (cond, card) -> evalCond gameState pId cond
                                                          && canBuy pId gameState card) buys with
                     | Some (_, card) -> Some card
                     | None -> None
