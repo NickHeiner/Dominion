@@ -11,9 +11,10 @@ let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [
 
 let memberEquals items1 items2 = List.sort items1 |> should equal <| List.sort items2
 
+let withCard pId card = GameState.updatePlayer pId (fun player -> {player with hand = card::player.hand})
+let withActionCard pId card = withCard pId (Action card)
+
 module ActionTests =
-    let withCard pId card = GameState.updatePlayer pId (fun player -> {player with hand = card::player.hand})
-    let withActionCard pId card = withCard pId (Action card)
     let useAction pId card = protoGame |> withActionCard pId (Definitions.getRaw card) |> GameStateUpdate.act pId card
     let countCards pId game card = Utils.countOccurences (GameState.getPlayer pId game |> GameState.getHand) card
 
@@ -712,8 +713,60 @@ module BotTests =
     let [<Test>] ``evalCond expected per hand false`` () =
         let card = Action Smithy
         let player = {initialPlayer with deck = List.replicate 100 card}
-        BotHandler.evalCond player (ExpectedPerHandLessThan (1.0, Action Smithy))
+        BotHandler.evalCond player (ExpectedPerHandLessThan (1., Action Smithy))
         |> should be False
+
+    let [<Test>] ``find valid action`` () =
+        let aId = PId 0
+        let toAct = ASmithy
+        protoGame
+        |> withActionCard aId Smithy
+        |> GameStateUpdate.findFirstValidAction aId [(Always, AVillage);
+                                                      (CountInCardsLessThan (100, Coin Gold), toAct);
+                                                      (Always, ABureaucrat)]
+        |> should equal <| Some toAct
+        
+    let [<Test>] ``find invalid action`` () =
+        let aId = PId 0
+        let toAct = ASmithy
+        protoGame
+        |> withActionCard aId Feast
+        |> GameStateUpdate.findFirstValidAction aId [(Always, AVillage);
+                                                      (Always, AFeast <| Victory Province);
+                                                      (Always, ABureaucrat)]
+        |> should equal None
+
+    let [<Test>] ``find no valid action`` () =
+        let aId = PId 0
+        let toAct = ASmithy
+        protoGame
+        |> GameStateUpdate.findFirstValidAction aId [(Always, AVillage);
+                                                      (CountInCardsLessThan (100, Coin Gold), toAct);
+                                                      (Always, ABureaucrat)]
+        |> should equal None
+
+    let [<Test>] ``find valid buy`` () =
+        let aId = PId 1
+        let toBuy = Victory Duchy
+        protoGame
+        |> GameState.updatePlayer aId (fun player -> {player with hand = [Coin Silver; Coin Copper; Coin Copper; Coin Copper]}) 
+        |> GameStateUpdate.findFirstValidBuy aId [(Always, Victory Province);
+                                                  (Always, Coin Gold);
+                                                  (ExpectedPerHandLessThan (2., Action Mine), toBuy);
+                                                  (Always, Action Moat)]
+        |> should equal <| Some toBuy
+
+    let [<Test>] ``find no valid buy`` () =
+        let aId = PId 1
+        let toBuy = Action Mine
+        protoGame
+        |> GameState.updatePlayer aId (fun player -> {player with hand = [Coin Copper]}) 
+        |> GameStateUpdate.findFirstValidBuy aId [(Always, Victory Province);
+                                                  (Always, Coin Gold);
+                                                  (ExpectedPerHandLessThan (2., Action Mine), toBuy);
+                                                  (Always, Action Moat)]
+        |> should equal None
+
 
     module GameStateUpdateTests =
         module BuyTests = 

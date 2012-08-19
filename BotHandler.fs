@@ -17,14 +17,14 @@
                                                         total = 0. || expected > occurences / total
         |  CountInCardsLessThan (count, card) -> count > (player |> Utils.allCards |> Utils.countOccurs card)
     
-    module Query =
-        let allCards gameState playerId = List.nth gameState.players playerId |> Utils.allCards
-        let canBuy id gameState card = GameState.totalPurchasingPower id gameState > Constants.cardCost card
-                                        && gameState.currentTurn.buys > 0
+    
+    let allCards gameState playerId = List.nth gameState.players playerId |> Utils.allCards
+    let canBuy pId gameState card = GameState.totalPurchasingPower pId gameState >= Constants.cardCost card
+                                    && gameState.currentTurn.buys > 0
 
-        (* TODO There is action-card specific validation as well *)
-        let canAct id gameState actCard = Utils.contains (Action <| Definitions.getRaw actCard) (GameState.getPlayer id gameState).hand
-                                            && gameState.currentTurn.actions > 0
+    let canAct aId gameState actCard = Utils.contains (Action <| Definitions.getRaw actCard) (GameState.getPlayer aId gameState).hand
+                                        && gameState.currentTurn.actions > 0
+                                        && ActionCards.isValidUsage aId gameState actCard
 
     module GameStateUpdate =
         let act pId (actCard : argActCard) gameState =
@@ -41,14 +41,24 @@
                                      |> GameState.withTurn {withPlayer.currentTurn
                                                             with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card}
 
-        let applyFirstValidBuy pId buys gameState =
+        let findFirstValidAction pId acts gameState =
+            match List.tryFind (fun (cond, actCard) -> evalCond (GameState.getPlayer pId gameState) cond
+                                                       && canAct pId gameState actCard) acts with
+                | Some (_, argActCard) -> Some argActCard
+                | None -> None
+
+        let findFirstValidBuy pId buys gameState = 
             match List.tryFind (function (cond, card) -> evalCond (GameState.getPlayer pId gameState) cond
-                                                         && Query.canBuy pId gameState card) buys with
-                | Some (_, card) -> buy pId card gameState
+                                                         && canBuy pId gameState card) buys with
+                    | Some (_, card) -> Some card
+                    | None -> None
+        
+        let applyFirstValidBuy pId buys gameState =
+            match findFirstValidBuy pId buys gameState with
+                | Some card -> buy pId card gameState
                 | None -> gameState
 
         let applyFirstValidAction pId acts gameState =
-            match List.tryFind (fun (cond, actCard) -> evalCond (GameState.getPlayer pId gameState) cond
-                                                       && Query.canAct pId gameState actCard) acts with
-                | Some (_, argActCard) -> act pId argActCard gameState
+            match findFirstValidAction pId acts gameState with
+                | Some card -> act pId card gameState
                 | None -> gameState
