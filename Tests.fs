@@ -108,10 +108,10 @@ module ActionTests =
                                  afterAction.currentTurn.purchasingPower |> should equal (initialPurchasingPower + WOODCUTTER_PURCHASING_POWER)
                                  afterAction.currentTurn.buys |> should equal (initialBuys + WOODCUTTER_BUYS)
 
-    let [<Test>] feast () = let id = PId 0
+    let [<Test>] feast () = let aId = PId 0
                             let toGain = Victory Duchy
                             let feast = AFeast toGain
-                            let player = useAction id feast |> GameState.getPlayer id
+                            let player = useAction aId feast |> GameState.getPlayer aId
                             player.discard |> should contain toGain
                             Utils.allCards player |> should not' (contain feast)
                             
@@ -637,7 +637,7 @@ module BotTests =
         let id = PId 0
         (game 
         |> GameState.updatePlayer id (fun player -> {player with hand = hand})
-        |> BotHandler.GameStateUpdate.applyFirstValidBuy id [Buy toBuy]
+        |> BotHandler.GameStateUpdate.applyFirstValidBuy id [(Always, toBuy)]
         |> GameState.getPlayer id).discard
 
     let [<Test>] ``pass bot does nothing`` () = 
@@ -665,7 +665,7 @@ module BotTests =
         let deck = [Coin Copper; Victory Estate; Victory Duchy]
         (protoGame 
         |> GameState.updatePlayer id (fun player -> {player with hand = [Action Smithy]; deck = deck})
-        |> BotHandler.GameStateUpdate.applyFirstValidAction id [ASmithy]
+        |> BotHandler.GameStateUpdate.applyFirstValidAction id [(Always, ASmithy)]
         |> GameState.getPlayer id).hand 
         |> Set.ofList
         |> should equal (Set.ofList deck)
@@ -675,7 +675,7 @@ module BotTests =
         let origHand = [Coin Copper]
         (protoGame 
         |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
-        |> BotHandler.GameStateUpdate.applyFirstValidAction id [ASmithy]
+        |> BotHandler.GameStateUpdate.applyFirstValidAction id [(Always, ASmithy)]
         |> GameState.getPlayer id).hand 
         |> should equal origHand
 
@@ -685,9 +685,35 @@ module BotTests =
         (protoGame 
         |> GameState.withTurn {protoGame.currentTurn with actions = 0}
         |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
-        |> BotHandler.GameStateUpdate.applyFirstValidAction id [ASmithy]
+        |> BotHandler.GameStateUpdate.applyFirstValidAction id [(Always, ASmithy)]
         |> GameState.getPlayer id).hand 
         |> should equal origHand
+
+    let [<Test>] ``evalCond always`` () = 
+        BotHandler.evalCond initialPlayer Always
+        |> should be True
+
+    let [<Test>] ``evalCond count in deck true`` () =
+        BotHandler.evalCond initialPlayer (CountInCardsLessThan (4, Action Smithy))
+        |> should be True
+
+    let [<Test>] ``evalCond count in deck false`` () =
+        let count = 4
+        let card = Action Smithy
+        let cards = List.replicate count card
+        let player = {initialPlayer with deck = cards; hand = cards; discard = cards}
+        BotHandler.evalCond player (CountInCardsLessThan (count, card))
+        |> should be False
+
+    let [<Test>] ``evalCond expected per hand true`` () =
+        BotHandler.evalCond initialPlayer (ExpectedPerHandLessThan (1.0, Action Smithy))
+        |> should be True
+
+    let [<Test>] ``evalCond expected per hand false`` () =
+        let card = Action Smithy
+        let player = {initialPlayer with deck = List.replicate 100 card}
+        BotHandler.evalCond player (ExpectedPerHandLessThan (1.0, Action Smithy))
+        |> should be False
 
     module GameStateUpdateTests =
         module BuyTests = 
