@@ -109,8 +109,3 @@ let initialCount playerCount = function
                   | Silver -> 40 
                   | Copper -> 60
   | Action _ -> 10
-
-(* one col for bot names, one col for score *)
-let COL_OFFSET = 2
-(* for header *)
-let ROW_OFFSET = 1

@@ -35,6 +35,7 @@ let listMem list item = List.exists ((=) item) list
 let flatten l = List.fold (@) [] l
 
 (* Is this really necessary? Could List.iteri be used instead? *)
+(* Or how about List.mapi? *)
 let withIndices items = Seq.zip (seq { 0 .. List.length items}) (items |> List.toSeq) |> Seq.toList
 
 let prettyPrintCardCounts cardCounts = cardCounts
@@ -75,6 +76,13 @@ let fillHand src dest =
             | [] -> dest
             | hd::tl -> helper tl (hd::dest)
     helper disjointSrc dest
+
+let nth index items = List.nth items index
+
+let defaultFind key ifNotFound map =
+    match Map.tryFind key map with
+    |   Some value -> value
+    |   None -> ifNotFound 
 
 let pick set = match Set.toList set with
                 | [] -> failwith "Expected more than 0 elements"

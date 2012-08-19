@@ -81,8 +81,50 @@ module Game =
      let firstWorksheet = workbook.Worksheets.[1] :?> Worksheet
      firstWorksheet.Name <- "Analysis"
       
-     playGames () 
-     |> List.map (gameToPlayerStats Bot.bots)
+     let gameResults =
+        playGames () 
+        |> List.map (gameToPlayerStats Bot.bots)
+
+     let placements = 
+        gameResults
+        |> List.map (fun games -> games
+                                  |> List.sortBy (fun stats -> stats.score)
+                                  |> List.rev)
+        |> List.map (List.mapi (fun index playerStats -> playerStats.name, index))
+        |> Utils.flatten
+        |> List.toSeq
+        |> Seq.groupBy fst
+        |> Seq.map (fun (name, placements) -> name, Seq.countBy snd placements |> Map.ofSeq)
+        |> Map.ofSeq
+
+     let botCount = Map.toList placements |> List.length
+
+     let cellEntries = 
+        seq { for i in 0 .. botCount -> seq {for j in 0 .. botCount -> i, j}}
+        |> Seq.concat
+        |> Seq.map (fun coords -> coords, match coords with
+                                          | 0, 0 -> box ""
+                                          | row, 0 -> placements
+                                                      |> Map.toList
+                                                      |> List.map fst
+                                                      |> Utils.nth (row - 1) (* -1 for headers *)
+                                                      |> box
+                                          | 0, col -> box col
+                                          | row, col -> placements
+                                                        |> Map.toList
+                                                        |> List.map snd
+                                                        |> Utils.nth (row - 1) (* -1 for headers *)
+                                                        |> Utils.defaultFind (col - 1) 0 (* -1 b/c "1st, 2nd, 3rd" is 1-indexed, 
+                                                                                            but placements is 0 indexed *)
+                                                        |> box
+                                          )
+        |> Map.ofSeq
+
+     (* +1 for header and labels *)
+     let analysisCells = Array2D.init (botCount + 1) (botCount + 1) (fun row col -> Map.find (row, col) cellEntries)
+     firstWorksheet.Range(Utils.range (Row 0) (Col 0) (Row botCount) (Col botCount)).Value2 <- analysisCells
+
+     gameResults
      |> Utils.flatten
      |> Seq.groupBy (fun playerStats -> playerStats.name)
      |> Seq.iter (fun (name, statsSeq) ->
