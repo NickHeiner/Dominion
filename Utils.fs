@@ -12,7 +12,8 @@ let withNth items index item =
         | [] -> invalidArg "index" (sprintf "invalid index: %d" currIndex)
   helper index items
 
-let countOccurences list item = List.filter (fun x -> x = item) list |> List.length
+let countOccurences list item = List.filter ((=) item) list |> List.length
+let countOccurs item list = countOccurences list item
 
 (* Returns a list with the same elements as the original but in randomized order *)
 let shuffle items = 

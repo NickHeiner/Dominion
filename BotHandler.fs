@@ -2,6 +2,20 @@
     
     open Definitions
     open Constants
+
+    let evalCond player = function
+        |   Always -> true
+        |   ExpectedPerHandLessThan (expected, card) -> let allCards = Utils.allCards player
+                                                        let occurences = 
+                                                            allCards
+                                                            |> Utils.countOccurs card
+                                                            |> float 
+                                                        let total =
+                                                            allCards
+                                                            |> List.length
+                                                            |> float
+                                                        total = 0. || expected < occurences / total
+        |  CountInDeckLessThan (count, card) -> count < (player |> Utils.allCards |> Utils.countOccurs card)
     
     module Query =
         let allCards gameState playerId = List.nth gameState.players playerId |> Utils.allCards

@@ -77,13 +77,13 @@ let getRaw = function
 (* Turn for a player. purchasingPower doesn't include coins. *)
 type turn = {actions : int; buys : int; purchasingPower : int}
 
-type act = Act of ActCard
-type buy = Buy of card
-
 type row = Row of int
 type col = Col of int
 
-type bot = argActCard list * buy list
+type cond = Always | ExpectedPerHandLessThan of float * card | CountInDeckLessThan of int * card
+type act = Act of (cond * argActCard) list
+type buy = Buy of (cond * card) list
+type bot = act * buy
 
 [<CustomEquality; NoComparisonAttribute>]
 (* Why are hand and discard lists and not sets? *)

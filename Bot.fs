@@ -2,6 +2,6 @@
 
 open Definitions
 
-let estateBot = [], [Buy (Victory Estate)]
+(* let estateBot = [], [Buy (Victory Estate)] *)
 
-let bots = ["Pass", ([], []); "Estate", estateBot]
+let bots = ["Pass", ([], [])] (* ; "Estate", estateBot] *)
