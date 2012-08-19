@@ -120,9 +120,21 @@ module Game =
                                           )
         |> Map.ofSeq
 
-     (* +1 for header and labels *)
-     let analysisCells = Array2D.init (botCount + 1) (botCount + 1) (fun row col -> Map.find (row, col) cellEntries)
-     firstWorksheet.Range(Utils.range (Row 0) (Col 0) (Row botCount) (Col botCount)).Value2 <- analysisCells
+     let analysisRange = Utils.range (Row 0) (Col 0) (Row botCount) (Col botCount)
+     firstWorksheet.Range(analysisRange).Value2 <- 
+        (* +1 for header and labels *)
+        Array2D.init (botCount + 1) (botCount + 1) (fun row col -> Map.find (row, col) cellEntries)
+
+     // Add new item to the charts collection
+     let chartobjects = (firstWorksheet.ChartObjects() :?> ChartObjects) 
+     let chartobject = chartobjects.Add(400.0, 20.0, 550.0, 350.0) 
+
+     // Configure the chart using the wizard
+     chartobject.Chart.ChartWizard
+       (Title = "Placements", 
+        Source = firstWorksheet.Range(analysisRange),
+        Gallery = XlChartType.xlColumnStacked, 
+        PlotBy = XlRowCol.xlColumns)
 
      gameResults
      |> Utils.flatten
