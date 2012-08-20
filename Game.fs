@@ -51,7 +51,12 @@ module Game =
                  (GameState.withCards (STARTING_CARDS @ actionCardsRequired) GameState.initialGameState)
 
 
-  let playGame () = Bot.bots |> getInitialState |> round 
+  let playGame () = 
+    let botNames = Bot.bots |> List.map (fun (name, _, _) -> name)
+    if List.length botNames > (botNames |> Set.ofList |> Set.toList |> List.length)
+        then invalidArg "bots" <| sprintf "Bots can't have duplicate names, but names were: %A" botNames
+
+    Bot.bots |> getInitialState |> round 
 
   let playGames () =
     Async.Parallel [ for i in 0..GAMES_TO_PLAY - 1 -> async { let result = playGame ()
@@ -99,17 +104,6 @@ module Game =
      let workbook, analysisWorksheet = ExcelRenderer.makeWorksheet ()
      ExcelRenderer.addAnalysisData analysisWorksheet placements
 (*
-     // Add new item to the charts collection
-     let chartobjects = (firstWorksheet.ChartObjects() :?> ChartObjects) 
-     let chartobject = chartobjects.Add(400.0, 20.0, 550.0, 350.0) 
-
-     // Configure the chart using the wizard
-     chartobject.Chart.ChartWizard
-       (Title = "Placements", 
-        Source = firstWorksheet.Range(analysisRange),
-        Gallery = XlChartType.xlColumnStacked, 
-        PlotBy = XlRowCol.xlColumns)
-
      gameResults
      |> Utils.flatten
      |> Seq.groupBy (fun playerStats -> playerStats.name)

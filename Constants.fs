@@ -9,7 +9,7 @@ let TURN_LIMIT = 10000
 
 let ACTION_CARDS_PER_GAME = 10
 
-let GAMES_TO_PLAY = 3
+let GAMES_TO_PLAY = 10
 
 (* How many cards are required for a single garden to be worth a single point *)
 let GARDENS_FACTOR = 10

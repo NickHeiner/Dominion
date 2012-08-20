@@ -890,12 +890,11 @@ module GameStateTests =
 module ExcelRendererTests =
     open ExcelRenderer
 
-    (* Bot names are sorted alphabetically *)
     let placements = Map.ofList [("Foo", Map.ofList [(0, 2); (1, 1)]); ("Bar", Map.ofList [(0, 1); (1, 2)])]
 
     let [<Test>] botNames () =
         botNameLabels placements
-        |> should equal <| Map.ofList [((Row 1, Col 0), "Foo"); ((Row 0, Col 0), "Bar")]
+        |> should equal <| Map.ofList [((Row 0, Col 0), "Foo"); ((Row 1, Col 0), "Bar")]
 
     let [<Test>] placeLabels () =
         placeLabels placements
@@ -903,7 +902,7 @@ module ExcelRendererTests =
 
     let [<Test>] testPlaceFreqs () =
         let actual = placeFreqs placements
-        let expected = Map.ofList [((Row 0, Col 0), 1); ((Row 0, Col 1), 2); ((Row 1, Col 0), 2); ((Row 1, Col 1), 1)]
+        let expected = Map.ofList [((Row 1, Col 0), 1); ((Row 1, Col 1), 2); ((Row 0, Col 0), 2); ((Row 0, Col 1), 1)]
         actual |> should equal expected
 
     let [<Test>] placeFreqs3 () =
@@ -912,6 +911,15 @@ module ExcelRendererTests =
                                    (Row 1, Col 0), 0; (Row 1, Col 1), 3; (Row 1, Col 2), 0;
                                    (Row 2, Col 0), 0; (Row 2, Col 1), 0; (Row 2, Col 2), 3]
         actual |> should equal expected
+
+    let [<Test>] testSortPlacements () =
+        let actual = sortPlacements <| Map.ofList ["Pass", Map.ofList [2, 3]
+                                                   "Smithy", Map.ofList [0, 1; 1, 2];
+                                                   "MineSmithy", Map.ofList [0, 3]]
+        let expected = ["MineSmithy", Map.ofList [0, 3]
+                        "Smithy", Map.ofList [0, 1; 1, 2];
+                        "Pass", Map.ofList [2, 3]]
+        actual |> should equal expected        
 
 module GameTests =
     let [<Test>] ``get initial bots`` () =

@@ -23,5 +23,7 @@ let mineSmithy = "MineSmithy",
                            (Always, Coin Gold);
                            (Always, Coin Silver)]
 
-(* If these names aren't valid for Excel sheets, you're gonna have a bad time. *)
-let bots = ["Pass", [], []; smithy; mineSmithy]
+let dupee (name, acts, buys) = name + "dupee", acts, buys 
+
+(* If these names aren't valid for Excel sheets, or you have duplicate bot names, you're gonna have a bad time. *)
+let bots = ["Pass", [], []; smithy; mineSmithy; dupee smithy]

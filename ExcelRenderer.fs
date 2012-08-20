@@ -24,7 +24,13 @@
          firstWorksheet.Name <- "Analysis"
          workbook, firstWorksheet
 
-    let sortPlacements placements = placements |> Map.toList |> List.sortBy snd
+    let sortPlacements placements =
+        placements
+        |> Map.toList
+        |> List.sortBy (fun (_, places) -> seq { 0 .. (Map.toList placements |> List.length) - 1}
+                                           |> Seq.map (fun i -> Utils.defaultFind i 0 places)
+                                           |> Seq.toList)
+        |> List.rev
 
     let botNameLabels placements = 
         placements
@@ -55,3 +61,16 @@
         render worksheet (Row 1) (Col 0) <| botNameLabels placements
         render worksheet (Row 0) (Col 1) <| placeLabels placements
         render worksheet (Row 1) (Col 1) <| placeFreqs placements
+
+        let chartobjects = (worksheet.ChartObjects() :?> ChartObjects) 
+        let chartobject = chartobjects.Add(400.0, 20.0, 550.0, 350.0) 
+
+        let botCount = placements |> Map.toList |> List.length
+        let sourceRange = range (Row 0) (Col 0) (Row botCount) (Col botCount)
+
+        // Configure the chart using the wizard
+        chartobject.Chart.ChartWizard
+           (Title = "Placements", 
+            Source = worksheet.Range(sourceRange),
+            Gallery = XlChartType.xlColumnStacked, 
+            PlotBy = XlRowCol.xlRows)
