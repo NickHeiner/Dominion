@@ -3,7 +3,6 @@ module Game =
 
   open Definitions
   open Constants
-  open Microsoft.Office.Interop.Excel
 
   let gameOver gameState = gameState.turnsTaken >= Constants.TURN_LIMIT
                             || Map.find (Victory Province) gameState.cards = 0
@@ -35,16 +34,27 @@ module Game =
   (* It's necessary to pick action cards that are in the game
      It would be good to look at the bots that are playing and see which cards they require. *)
   let getInitialState bots =
+
+    let actionCardsRequired = bots
+                                |> List.unzip
+                                |> snd
+                                |> BotHandler.actionCardsRequired 
+                                |> Set.map (Action)
+                                |> Set.toList
+    
+    if List.length actionCardsRequired > ACTION_CARDS_PER_GAME
+        then invalidArg "bots" <| sprintf "Each game may only have %d action cards, but the chosen bots require: %A"
+                                          ACTION_CARDS_PER_GAME
+                                          actionCardsRequired
+      
     bots
-      |> List.rev
-      |> List.unzip
-      |> snd
-      |> Utils.withIndices 
-      |> List.fold
-      (fun gameState (index, bot) ->
-        let newPlayerWithBot = {Constants.initialPlayer with bot = bot}
-        {gameState with players = newPlayerWithBot::gameState.players})
-        (GameState.withCards STARTING_CARDS GameState.initialGameState)
+    |> List.unzip
+    |> snd
+    |> List.fold (fun gameState bot ->
+                    let newPlayerWithBot = {Constants.initialPlayer with bot = bot}
+                    {gameState with players = newPlayerWithBot::gameState.players})
+                 (GameState.withCards (STARTING_CARDS @ actionCardsRequired) GameState.initialGameState)
+
 
   let playGame () = Bot.bots |> getInitialState |> round 
 
@@ -75,12 +85,8 @@ module Game =
      printfn "Dominion!"
      printfn "Kicking off %d games" GAMES_TO_PLAY
 
-     (* Excel documentation http://msdn.microsoft.com/en-us/library/hh297098.aspx *)
-     let app = new ApplicationClass(Visible = true)
-     let workbook = app.Workbooks.Add(XlWBATemplate.xlWBATWorksheet)
-     let firstWorksheet = workbook.Worksheets.[1] :?> Worksheet
-     firstWorksheet.Name <- "Analysis"
-      
+     
+
      let gameResults =
         playGames () 
         |> List.map (gameToPlayerStats Bot.bots)
@@ -97,34 +103,9 @@ module Game =
         |> Seq.map (fun (name, placements) -> name, Seq.countBy snd placements |> Map.ofSeq)
         |> Map.ofSeq
 
-     let botCount = Map.toList placements |> List.length
-
-     let cellEntries = 
-        seq { for i in 0 .. botCount -> seq {for j in 0 .. botCount -> i, j}}
-        |> Seq.concat
-        |> Seq.map (fun coords -> coords, match coords with
-                                          | 0, 0 -> box ""
-                                          | row, 0 -> placements
-                                                      |> Map.toList
-                                                      |> List.map fst
-                                                      |> Utils.nth (row - 1) (* -1 for headers *)
-                                                      |> box
-                                          | 0, col -> box col
-                                          | row, col -> placements
-                                                        |> Map.toList
-                                                        |> List.map snd
-                                                        |> Utils.nth (row - 1) (* -1 for headers *)
-                                                        |> Utils.defaultFind (col - 1) 0 (* -1 b/c "1st, 2nd, 3rd" is 1-indexed, 
-                                                                                            but placements is 0 indexed *)
-                                                        |> box
-                                          )
-        |> Map.ofSeq
-
-     let analysisRange = Utils.range (Row 0) (Col 0) (Row botCount) (Col botCount)
-     firstWorksheet.Range(analysisRange).Value2 <- 
-        (* +1 for header and labels *)
-        Array2D.init (botCount + 1) (botCount + 1) (fun row col -> Map.find (row, col) cellEntries)
-
+     let workbook, analysisWorksheet = ExcelRenderer.makeWorksheet ()
+     ExcelRenderer.addAnalysisData analysisWorksheet placements
+(*
      // Add new item to the charts collection
      let chartobjects = (firstWorksheet.ChartObjects() :?> ChartObjects) 
      let chartobject = chartobjects.Add(400.0, 20.0, 550.0, 350.0) 
@@ -161,13 +142,11 @@ module Game =
                         |> Set.toArray
                         |> Array.map (sprintf "%A")
 
-        (* TODO this isn't writing in score anywhere, and the "game %d" labels are in the 0th col *)
-
         worksheet.Range(Utils.singleCellRange (Row 0) (Col 1)).Value2 <- "Score"
         worksheet.Range(Utils.range (Row 0) (Col 2) (Row 0) (Col <| Array.length cardNames)).Value2 <- cardNames
         
-        let maxCol = Array.length cardNames
-        let nonLabelCols = seq { 0 .. maxCol - 1} (* -1 because upper bound in for loop is not exclusive *)
+        let maxCol = (Array.length cardNames) + 1 (* for score *)
+        let nonLabelCols = seq { 1 .. maxCol - 1} (* -1 because upper bound in for loop is not exclusive *)
 
         statsSeq
         |> Seq.iteri (fun index stats -> 
@@ -176,16 +155,17 @@ module Game =
             worksheet.Range(Utils.singleCellRange (Row row) (Col 1)).Value2 <- stats.score
             for col in nonLabelCols do 
                 let cell = Utils.singleCellRange (Row row) (Col (col + 2)) (* +1 to leave room for game label; +1 for score *)
-                worksheet.Range(cell).Value2 <- cardCountsArr.[row - 1].[col]
+                worksheet.Range(cell).Value2 <- cardCountsArr.[row - 1].[col - 1]
             )
         
         let dataRows = Seq.length statsSeq
         let lastRow = dataRows + 2 (* +1 for header; +1 for spacing *)
         
-        let setFormula formula row = for col in nonLabelCols do
-                                        let formulaRange = Utils.range (Row row) (Col 1) (Row row) (Col maxCol)
-                                        let sourceRange = Utils.range (Row 1) (Col col) (Row dataRows) (Col col)
-                                        worksheet.Range(formulaRange).Value2 <- sprintf "=%s(%s)" formula sourceRange
+        let setFormula formula row = 
+            for col in nonLabelCols do
+                let formulaRange = Utils.singleCellRange (Row row) (Col col)
+                let sourceRange = Utils.range (Row 1) (Col col) (Row dataRows) (Col col)
+                worksheet.Range(formulaRange).Value2 <- sprintf "=%s(%s)" formula sourceRange
 
         List.iteri
             (fun index (name, formula) -> worksheet.Range(Utils.singleCellRange (Row <| lastRow + index) (Col 0)).Value2 <- name
@@ -196,6 +176,6 @@ module Game =
              "StdDev", "STDEV.P"] (* tbh I don't know which stddev formula is best *)
         )
         
-     firstWorksheet.Activate ()                   
+     firstWorksheet.Activate ()    *)               
      0
      

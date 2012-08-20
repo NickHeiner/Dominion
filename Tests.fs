@@ -777,6 +777,10 @@ module BotTests =
                                                   (Always, Action Moat)]
         |> should equal None
 
+    let [<Test>] ``action cards required`` () =
+        let cards = [Smithy; Moat; Mine; Adventurer; Spy; Spy; Moat] 
+        BotHandler.actionCardsRequired [[], List.map (fun card -> (Always, Action card)) cards]
+        |> should equal (Set.ofList cards)
 
     module GameStateUpdateTests =
         module BuyTests = 
@@ -883,12 +887,30 @@ module GameStateTests =
                                       afterDraw.hand |> List.length |> should equal drawAmount
                                       afterDraw.discard |> should equal []
 
+module ExcelRendererTests =
+    open ExcelRenderer
+
+    (* Bot names are sorted alphabetically *)
+    let placements = Map.ofList [("Foo", Map.ofList [(1, 2); (2, 1)]); ("Bar", Map.ofList [(1, 1); (2, 2)])]
+
+    let [<Test>] botNames () =
+        botNameLabels placements
+        |> should equal <| Map.ofList [((Row 1, Col 0), "Foo"); ((Row 0, Col 0), "Bar")]
+
+    let [<Test>] placeLabels () =
+        placeLabels placements
+        |> should equal <| Map.ofList [((Row 0, Col 0), 1); ((Row 0, Col 1), 2)]
+
+    let [<Test>] placeFreqs () =
+        placeFreqs placements
+        |> should equal <| Map.ofList [((Row 0, Col 0), 1); ((Row 0, Col 1), 2); ((Row 1, Col 0), 2); ((Row 1, Col 1), 1)]
+
 module GameTests =
     let [<Test>] ``get initial bots`` () =
         let bot = [], []
         (Dominion.Game.getInitialState [("Foo", bot)]).players |> List.length |> should equal 1
 
-    let [<Test>] ``the game is over when playGame completes`` () = Dominion.Game.playGame () |> Dominion.Game.gameOver |> should be True
+    let [<Test>] ``playGame doesn't crash`` () = Dominion.Game.playGame () |> Dominion.Game.gameOver |> should be True
 
     module ScorePlayerTests =
         let [<Test>] ``simple score`` () = Dominion.Game.score 

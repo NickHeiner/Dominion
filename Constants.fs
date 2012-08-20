@@ -7,6 +7,8 @@ let STARTING_CARDS = [Victory Province; Victory Duchy; Victory Estate; Victory C
 
 let TURN_LIMIT = 10000
 
+let ACTION_CARDS_PER_GAME = 10
+
 let GAMES_TO_PLAY = 3
 
 (* How many cards are required for a single garden to be worth a single point *)
@@ -98,7 +100,7 @@ let victoryPointsFor = function
                    | Gardens -> 0
   | _ -> 0
 
-(* Note: only a set of actions should have initial count 10; the rest have initial count 0 *)
+(* By default, all actions start at count 0. Pick 10 cards and add 10 of them separately. *)
 let initialCount playerCount = function
   | Victory v -> match v with
                   | Province | Duchy | Estate | Gardens when playerCount = 2 -> 8

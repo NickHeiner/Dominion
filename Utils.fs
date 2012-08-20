@@ -25,12 +25,6 @@ let shuffle items =
     |> List.sortBy snd
     |> List.map fst
 
-let makeCell (Row row) (Col col) = sprintf "%c%d" ('A' + char col) (row + 1)
-let range startRow startCol endRow endCol = sprintf "%s:%s" (makeCell startRow startCol) (makeCell endRow endCol)
-let singleCellRange row col =
-    let cell = makeCell row col
-    sprintf "%s:%s" cell cell
-
 let listMem list item = List.exists ((=) item) list
 
 let flatten l = List.fold (@) [] l

@@ -3,6 +3,15 @@
     open Definitions
     open Constants
 
+    let actionCardsRequired (bots : bot list) =
+        bots
+        |> List.map (fun (_, buys) -> List.map snd buys)
+        |> Utils.flatten
+        |> List.fold (fun acc -> function
+                                    | Action a -> a::acc
+                                    | _ -> acc) []
+        |> Set.ofList
+
     let evalCond gameState aId = function
         |   Always -> true
         |   ExpectedPerHandLessThan (expected, card) -> let allCards =
@@ -68,3 +77,4 @@
             match findFirstValidAction pId acts gameState with
                 | Some card -> act pId card gameState
                 | None -> gameState
+

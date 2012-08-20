@@ -77,9 +77,6 @@ let getRaw = function
 (* Turn for a player. purchasingPower doesn't include coins. *)
 type turn = {actions : int; buys : int; purchasingPower : int}
 
-type row = Row of int
-type col = Col of int
-
 type cond = Always | ExpectedPerHandLessThan of float * card | CountInCardsLessThan of int * card | CardsRemainingLessThan of int * card
 type act = (cond * argActCard) list
 type buy = (cond * card) list
