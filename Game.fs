@@ -22,7 +22,7 @@ module Game =
                       let rec applyUpdate apply bot gameState =
                         let afterUpdate = apply pId bot gameState
                         if afterUpdate = gameState then gameState else applyUpdate apply bot afterUpdate
-                      let acts, buys = hd.bot
+                      let _, acts, buys = hd.bot
                       let afterTurn = applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction acts gameState
                                         |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy buys
                                         |> GameState.updatePlayer pId (fun player -> GameState.discardAll player |> GameState.draw 5)
@@ -33,11 +33,8 @@ module Game =
 
   (* It's necessary to pick action cards that are in the game
      It would be good to look at the bots that are playing and see which cards they require. *)
-  let getInitialState bots =
-
+  let getInitialState (bots : bot list) =
     let actionCardsRequired = bots
-                                |> List.unzip
-                                |> snd
                                 |> BotHandler.actionCardsRequired 
                                 |> Set.map (Action)
                                 |> Set.toList
@@ -48,8 +45,6 @@ module Game =
                                           actionCardsRequired
       
     bots
-    |> List.unzip
-    |> snd
     |> List.fold (fun gameState bot ->
                     let newPlayerWithBot = {Constants.initialPlayer with bot = bot}
                     {gameState with players = newPlayerWithBot::gameState.players})
@@ -59,9 +54,9 @@ module Game =
   let playGame () = Bot.bots |> getInitialState |> round 
 
   let playGames () =
-    Async.Parallel [ for i in 0..GAMES_TO_PLAY  -> async { let result = playGame ()
-                                                           printf "."
-                                                           return result } ]
+    Async.Parallel [ for i in 0..GAMES_TO_PLAY - 1 -> async { let result = playGame ()
+                                                              printf "."
+                                                              return result } ]
     |> Async.RunSynchronously
     |> Array.toList
 
@@ -76,16 +71,14 @@ module Game =
     |> Map.ofSeq
 
   let gameToPlayerStats bots game =
-    List.map2 (fun player (name, _) -> {name = name; score = float <| score player; cardCounts = cardCountsOfPlayer player}) game.players bots
+    List.map (fun player -> let name, _, _ = player.bot
+                            {name = name; score = float <| score player; cardCounts = cardCountsOfPlayer player}) game.players
     |> List.sortBy (fun stats -> stats.score)
     |> List.rev
 
-
-  let main argv = 
+  let main _ = 
      printfn "Dominion!"
      printfn "Kicking off %d games" GAMES_TO_PLAY
-
-     
 
      let gameResults =
         playGames () 

@@ -5,7 +5,7 @@
 
     let actionCardsRequired (bots : bot list) =
         bots
-        |> List.map (fun (_, buys) -> List.map snd buys)
+        |> List.map (fun (_, _, buys) -> List.map snd buys)
         |> Utils.flatten
         |> List.fold (fun acc -> function
                                     | Action a -> a::acc

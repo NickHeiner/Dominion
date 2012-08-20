@@ -6,7 +6,7 @@ open Definitions
 open Constants
 open BotHandler
 
-let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", ([], [])))
+let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", [], []))
                 |> GameState.withCards STARTING_CARDS
 
 let memberEquals items1 items2 = List.sort items1 |> should equal <| List.sort items2
@@ -779,7 +779,7 @@ module BotTests =
 
     let [<Test>] ``action cards required`` () =
         let cards = [Smithy; Moat; Mine; Adventurer; Spy; Spy; Moat] 
-        BotHandler.actionCardsRequired [[], List.map (fun card -> (Always, Action card)) cards]
+        BotHandler.actionCardsRequired ["Marmalo", [], List.map (fun card -> (Always, Action card)) cards]
         |> should equal (Set.ofList cards)
 
     module GameStateUpdateTests =
@@ -891,7 +891,7 @@ module ExcelRendererTests =
     open ExcelRenderer
 
     (* Bot names are sorted alphabetically *)
-    let placements = Map.ofList [("Foo", Map.ofList [(1, 2); (2, 1)]); ("Bar", Map.ofList [(1, 1); (2, 2)])]
+    let placements = Map.ofList [("Foo", Map.ofList [(0, 2); (1, 1)]); ("Bar", Map.ofList [(0, 1); (1, 2)])]
 
     let [<Test>] botNames () =
         botNameLabels placements
@@ -901,15 +901,22 @@ module ExcelRendererTests =
         placeLabels placements
         |> should equal <| Map.ofList [((Row 0, Col 0), 1); ((Row 0, Col 1), 2)]
 
-    let [<Test>] placeFreqs () =
+    let [<Test>] testPlaceFreqs () =
         let actual = placeFreqs placements
         let expected = Map.ofList [((Row 0, Col 0), 1); ((Row 0, Col 1), 2); ((Row 1, Col 0), 2); ((Row 1, Col 1), 1)]
         actual |> should equal expected
 
+    let [<Test>] placeFreqs3 () =
+        let actual = placeFreqs <| Map.ofList ["MineSmithy", Map.ofList [0, 3]; "Smithy", Map.ofList [1, 3]; "Pass", Map.ofList [2, 3]]
+        let expected = Map.ofList [(Row 0, Col 0), 3; (Row 0, Col 1), 0; (Row 0, Col 2), 0;
+                                   (Row 1, Col 0), 0; (Row 1, Col 1), 3; (Row 1, Col 2), 0;
+                                   (Row 2, Col 0), 0; (Row 2, Col 1), 0; (Row 2, Col 2), 3]
+        actual |> should equal expected
+
 module GameTests =
     let [<Test>] ``get initial bots`` () =
-        let bot = [], []
-        (Dominion.Game.getInitialState [("Foo", bot)]).players |> List.length |> should equal 1
+        let bot = "Foo", [], []
+        (Dominion.Game.getInitialState [bot]).players |> List.length |> should equal 1
 
     let [<Test>] ``playGame doesn't crash`` () = Dominion.Game.playGame () |> Dominion.Game.gameOver |> should be True
 

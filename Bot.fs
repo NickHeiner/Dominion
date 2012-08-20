@@ -8,11 +8,12 @@ let standard buys =
                                            (provincesAlmostGone, Victory Duchy);
                                            (provincesAlmostGone, Victory Estate)]
 
-let smithy = [(Always, ASmithy)], standard [(ExpectedPerHandLessThan (1., Action Smithy), Action Smithy);
-                                            (Always, Coin Gold);
-                                            (Always, Coin Silver)]
+let smithy = "Smithy", [(Always, ASmithy)], standard [(ExpectedPerHandLessThan (1., Action Smithy), Action Smithy);
+                                                      (Always, Coin Gold);
+                                                      (Always, Coin Silver)]
 
-let mineSmithy = [(Always, AMine Silver);
+let mineSmithy = "MineSmithy", 
+                 [(Always, AMine Silver);
                   (Always, AMine Copper);
                   (Always, ASmithy)
                   (Always, AMine Gold)],
@@ -23,4 +24,4 @@ let mineSmithy = [(Always, AMine Silver);
                            (Always, Coin Silver)]
 
 (* If these names aren't valid for Excel sheets, you're gonna have a bad time. *)
-let bots = ["Pass", ([], []); "Smithy", smithy; "MineSmithy", mineSmithy]
+let bots = ["Pass", [], []; smithy; mineSmithy]

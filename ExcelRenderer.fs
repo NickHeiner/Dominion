@@ -24,9 +24,11 @@
          firstWorksheet.Name <- "Analysis"
          workbook, firstWorksheet
 
+    let sortPlacements placements = placements |> Map.toList |> List.sortBy snd
+
     let botNameLabels placements = 
         placements
-        |> Map.toList
+        |> sortPlacements
         |> List.mapi (fun index (name, _) -> ((Row index, Col 0), name))
         |> Map.ofList
 
@@ -36,14 +38,17 @@
         |> Map.ofSeq
 
     let placeFreqs placements = 
-        let botCount = placements |> Map.toList |> List.length
+        let botCount = placements
+                        |> Map.toList
+                        |> List.length
+        let places = placements
+                        |> sortPlacements
+                        |> List.map snd
         seq { for i in 0 .. (botCount - 1) -> seq {for j in 0 .. (botCount - 1) -> i, j}}
         |> Seq.concat
-        |> Seq.map (fun ((row, col) as coords) -> (Row row, Col col), placements
-                                                                        |> Map.toList
-                                                                        |> List.map snd
+        |> Seq.map (fun ((row, col) as coords) -> (Row row, Col col), places
                                                                         |> Utils.nth row
-                                                                        |> Utils.defaultFind (col + 1) 0) (* +1 b/c place is 1-indexed *) 
+                                                                        |> Utils.defaultFind col 0)
         |> Map.ofSeq
 
     let addAnalysisData worksheet placements =

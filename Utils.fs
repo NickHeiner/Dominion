@@ -79,6 +79,8 @@ let defaultFind key ifNotFound map =
     |   Some value -> value
     |   None -> ifNotFound 
 
+let mid (_, x, _) = x
+
 let pick set = match Set.toList set with
                 | [] -> failwith "Expected more than 0 elements"
                 | hd::[] -> hd

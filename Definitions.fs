@@ -80,7 +80,7 @@ type turn = {actions : int; buys : int; purchasingPower : int}
 type cond = Always | ExpectedPerHandLessThan of float * card | CountInCardsLessThan of int * card | CardsRemainingLessThan of int * card
 type act = (cond * argActCard) list
 type buy = (cond * card) list
-type bot = act * buy
+type bot = string * act * buy (* string = name *)
 
 [<CustomEquality; NoComparisonAttribute>]
 (* Why are hand and discard lists and not sets? *)
@@ -95,7 +95,3 @@ type player = {hand : card list; deck : card list; discard : card list; bot : bo
                 override x.GetHashCode() = hash (x.hand, x.deck, x.discard, x.bot)
 
 type gameState = {players : player list; cards : Map<card, int>; trash : card list; currentTurn : turn; turnsTaken : int}
-
-(* this there a better way to enumerate over all members of the type? *)
-(* http://stackoverflow.com/questions/10867544/map-over-all-values-in-a-discriminated-union *)
-(* let allCards = [Victory Province; Victory Duchy; Victory Estate; Victory Curse; Coin Gold; Coin Silver; Coin Copper; Action Smithy] *)
