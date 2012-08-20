@@ -902,8 +902,9 @@ module ExcelRendererTests =
         |> should equal <| Map.ofList [((Row 0, Col 0), 1); ((Row 0, Col 1), 2)]
 
     let [<Test>] placeFreqs () =
-        placeFreqs placements
-        |> should equal <| Map.ofList [((Row 0, Col 0), 1); ((Row 0, Col 1), 2); ((Row 1, Col 0), 2); ((Row 1, Col 1), 1)]
+        let actual = placeFreqs placements
+        let expected = Map.ofList [((Row 0, Col 0), 1); ((Row 0, Col 1), 2); ((Row 1, Col 0), 2); ((Row 1, Col 1), 1)]
+        actual |> should equal expected
 
 module GameTests =
     let [<Test>] ``get initial bots`` () =

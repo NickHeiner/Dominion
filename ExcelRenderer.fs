@@ -43,10 +43,10 @@
                                                                         |> Map.toList
                                                                         |> List.map snd
                                                                         |> Utils.nth row
-                                                                        |> Utils.defaultFind (col + 1) 0) (* +1 b/c place is 1-indexed *)
+                                                                        |> Utils.defaultFind (col + 1) 0) (* +1 b/c place is 1-indexed *) 
         |> Map.ofSeq
 
-    let addAnalysisData worksheet botCount placements =
+    let addAnalysisData worksheet placements =
         render worksheet (Row 1) (Col 0) <| botNameLabels placements
         render worksheet (Row 0) (Col 1) <| placeLabels placements
         render worksheet (Row 1) (Col 1) <| placeFreqs placements
