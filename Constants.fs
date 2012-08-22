@@ -109,13 +109,15 @@ let victoryPointsFor = function
   | _ -> 0
 
 (* By default, all actions start at count 0. Pick 10 cards and add 10 of them separately. *)
-let initialCount playerCount = function
-  | Victory v -> match v with
-                  | Province | Duchy | Estate | Gardens when playerCount = 2 -> 8
-                  | Province | Duchy | Estate | Gardens -> 12
-                  | Curse -> playerCount * 10 - 10 
-  | Coin c -> match c with 
-                  | Gold -> 30 
-                  | Silver -> 40 
-                  | Copper -> 60
-  | Action _ -> 10
+let initialCount playerCount = 
+    if playerCount = 0 then invalidArg "playerCount" "Can't have a game with 0 players." else
+    function
+      | Victory v -> match v with
+                      | Province | Duchy | Estate | Gardens when playerCount = 2 -> 8
+                      | Province | Duchy | Estate | Gardens -> 12
+                      | Curse -> playerCount * 10 - 10 
+      | Coin c -> match c with 
+                      | Gold -> 30 
+                      | Silver -> 40 
+                      | Copper -> 60
+      | Action _ -> 10

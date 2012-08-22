@@ -841,9 +841,13 @@ module GameStateTests =
         let card = Action Smithy
         let pId = PId 0
         let playerCount = List.length protoGame.players
-        protoGame
-        |> GameState.withCards [card]
-        |> GameState.addCards ((initialCount playerCount card) + 1) pId card
+        let afterDraw = protoGame
+                        |> GameState.withCards [card]
+                        |> GameState.addCards ((initialCount playerCount card) + 14) pId card
+        
+        Map.find (Action Smithy) afterDraw.cards |> should equal 0
+
+        afterDraw
         |> GameState.getPlayer pId
         |> GameState.getDiscard
         |> should equal <| List.replicate (initialCount playerCount card) card

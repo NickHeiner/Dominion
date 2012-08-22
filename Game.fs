@@ -14,6 +14,7 @@ module Game =
     (List.sumBy victoryPointsFor cards) + gardensCount * (List.length cards / GARDENS_FACTOR)
     
   let rec round (gameState : gameState) = 
+    (* TODO why do we need `players` as a separate var? Why not just gameState.players? *)
     let rec turn players gameState ((PId index) as pId) =
       if gameOver gameState then gameState else
         match players with
@@ -23,6 +24,7 @@ module Game =
                         let afterUpdate = apply pId bot gameState
                         if afterUpdate = gameState then gameState else applyUpdate apply bot afterUpdate
                       let _, acts, buys = hd.bot
+                      (* TODO does this handle multiple buys and acts on a turn? *)
                       let afterTurn = applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction acts gameState
                                         |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy buys
                                         |> GameState.updatePlayer pId (fun player -> GameState.discardAll player |> GameState.draw 5)
@@ -31,8 +33,6 @@ module Game =
     let afterRound = turn gameState.players gameState <| PId 0
     if gameOver afterRound then afterRound else round afterRound
 
-  (* It's necessary to pick action cards that are in the game
-     It would be good to look at the bots that are playing and see which cards they require. *)
   let getInitialState (bots : bot list) =
     let actionCardsRequired = bots
                                 |> BotHandler.actionCardsRequired 
@@ -48,8 +48,8 @@ module Game =
     |> List.fold (fun gameState bot ->
                     let newPlayerWithBot = {Constants.initialPlayer with bot = bot}
                     {gameState with players = newPlayerWithBot::gameState.players})
-                 (GameState.withCards (STARTING_CARDS @ actionCardsRequired) GameState.initialGameState)
-
+                 GameState.initialGameState   
+    |> GameState.withCards (STARTING_CARDS @ actionCardsRequired)
 
   let playGame () = 
     let botNames = Bot.bots |> List.map (fun (name, _, _) -> name)
