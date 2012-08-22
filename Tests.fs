@@ -947,7 +947,23 @@ module ExcelRendererTests =
         let expected = Map.ofList [(Row 0, Col 0), 32.; (Row 1, Col 0), 28.]
         actual |> should equal expected
 
-    (* let [<Test>] testAggreLabelsOf *)
+    let statsOutput = ["Marmalade", "marma"; "Baboons", "bnbs"; "Gin", "bucket"]
+
+    let [<Test>] testAggrLabelsOf () =
+        let col = Col 0
+        statsOutput |> aggrLabelsOf |> should equal <| Map.ofList [(Row 0, col), "Marmalade";
+                                                                   (Row 1, col), "Baboons";
+                                                                   (Row 2, col), "Gin"]
+
+    let [<Test>] testAggrFormulasOf () =
+        let actual = aggrFormulasOf statSeq statsOutput (Row 2) (Col 2)
+        let expected =
+            Map.ofList
+                [(Row 0, Col 0), "=marma(C3:C5)"; (Row 0, Col 1), "=marma(D3:D5)"; (Row 0, Col 2), "=marma(E3:E5)"; (Row 0, Col 3), "=marma(F3:F5)"; (Row 0, Col 4), "=marma(G3:G5)";
+                 (Row 1, Col 0), "=bnbs(C3:C5)"; (Row 1, Col 1), "=bnbs(D3:D5)"; (Row 1, Col 2), "=bnbs(E3:E5)"; (Row 1, Col 3), "=bnbs(F3:F5)"; (Row 1, Col 4), "=bnbs(G3:G5)";
+                 (Row 2, Col 0), "=bucket(C3:C5)"; (Row 2, Col 1), "=bucket(D3:D5)"; (Row 2, Col 2), "=bucket(E3:E5)"; (Row 2, Col 3), "=bucket(F3:F5)"; (Row 2, Col 4), "=bucket(G3:G5)";
+                ]
+        actual |> should equal expected
 
 module GameTests =
     let [<Test>] ``get initial bots`` () =

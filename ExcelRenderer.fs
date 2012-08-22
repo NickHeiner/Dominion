@@ -5,6 +5,7 @@
     open Definitions
     open Constants
 
+    (* There is potential for sweet operator overloading for Row and Col *)
     type row = Row of int
     type col = Col of int
 
@@ -93,19 +94,20 @@
         |> Seq.mapi (fun index _ -> (Row index, Col 0), sprintf "Game %d" index)
         |> Map.ofSeq
 
-    let cardCountsOf stats = 
-        let allCards = 
-            stats
-            |> Seq.map (fun stats -> Map.toSeq stats.cardCounts)
-            |> Seq.concat
-            |> Seq.map fst
-            |> Seq.toList
-            |> List.sort (* We must sort, because the card headers are done in sorted order *)
+    let allCards = 
+        Seq.map (fun stats -> Map.toSeq stats.cardCounts)
+        >> Seq.concat
+        >> Seq.map fst
+        >> Seq.toList
+        >> List.sort (* We must sort, because the card headers are done in sorted order *)
+
+    let cardCountsOf (stats : seq<playerStats>) = 
+        let allCardsList = allCards stats
         
         stats
         |> Seq.mapi
             (fun gameIndex gameResults ->
-                Seq.mapi (fun cardIndex card -> (Row gameIndex, Col cardIndex), Utils.defaultFind card 0. gameResults.cardCounts) allCards)
+                Seq.mapi (fun cardIndex card -> (Row gameIndex, Col cardIndex), Utils.defaultFind card 0. gameResults.cardCounts) allCardsList)
         |> Seq.concat
         |> Map.ofSeq
 
@@ -114,26 +116,46 @@
         |> Seq.mapi (fun index gameResults -> (Row index, Col 0), gameResults.score)
         |> Map.ofSeq
 
-    let aggrLabels = 
-        STATS_OUTPUT
-        |> List.mapi (fun index (name, _) -> (Row index, Col 0), name)
-        |> Map.ofList
+    let aggrLabelsOf  = 
+        List.mapi (fun index (name, _) -> (Row index, Col 0), name)
+        >> Map.ofList
 
-    let aggrFormulasOf stats = Map.empty
+    let aggrFormulasOf stats statsOutput ((Row dataRowStart) as rowStart) (Col dataColStart) =
+        let colCount = (allCards stats |> List.length) + 1 (* +1 for score column *)
+        let rowCount = Seq.length stats
+        let formulae = List.map snd statsOutput
+        let lastRow = Row <| rowCount + dataRowStart
+        seq {for row in 0 .. List.length statsOutput - 1 do
+                for col in 0 .. colCount - 1 do
+                    let currCol = Col <| col + dataColStart
+                    let sourceRange = range rowStart currCol
+                                            lastRow  currCol
+                    yield (Row row, Col col), sprintf "=%s(%s)" (List.nth formulae row) sourceRange
+            }
+        |> Map.ofSeq
 
-    let addBotData (workbook : Workbook) gameResults =
-        let statsPerBot = gameResults
-                            |> Utils.flatten
-                            |> Seq.groupBy (fun playerStats -> playerStats.name)
-
-        Seq.iter (fun (name, stats) ->
+    let addBotData (workbook : Workbook) =
+        Utils.flatten
+        >> Seq.groupBy (fun playerStats -> playerStats.name)
+        >> Seq.iter (fun (name, stats) ->
             let lastRow = Seq.length stats 
+            let dataRowStart = Row 1
+            let dataColStart = Col 1
             let worksheet = workbook.Worksheets.Add () :?> Worksheet
             worksheet.Name <- name
-            render worksheet (Row 0) (Col 1) <| Map.ofList [(Row 0, Col 0), "Score"]
-            render worksheet (Row 0) (Col 2) <| cardNamesOf stats
-            render worksheet (Row 1) (Col 0) <| gameLabelsOf stats
-            render worksheet (Row 1) (Col 2) <| cardCountsOf stats
-            render worksheet (Row 1) (Col 1) <| scoresOf stats
-            render worksheet (Row lastRow) (Col 0) <| aggrLabels
-            render worksheet (Row lastRow) (Col 1) <| aggrFormulasOf stats)
+
+            let renderWithOffset ((row, col), entries) = render worksheet row col entries
+
+            [(Row 0, Col 1), Map.ofList [(Row 0, Col 0), "Score"];
+             (Row 0, Col 2), cardNamesOf stats;
+             (Row 1, Col 0), gameLabelsOf stats;
+             (Row lastRow, Col 0), aggrLabelsOf STATS_OUTPUT;
+             (Row lastRow, Col 1), aggrFormulasOf stats STATS_OUTPUT dataRowStart dataColStart]
+            |> List.iter renderWithOffset
+
+            (* We have to do these separately because they return strings numbers instead of strings *)
+            [(Row 1, Col 2), cardCountsOf stats;
+             (Row 1, Col 1), scoresOf stats]
+            |> List.iter renderWithOffset)
+
+
