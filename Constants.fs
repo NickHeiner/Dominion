@@ -11,6 +11,8 @@ let ACTION_CARDS_PER_GAME = 10
 
 let GAMES_TO_PLAY = 10
 
+let AGGR_EMPTY_LINES = 1
+
 (* human friendly name * excel-valid formula name *)
 let STATS_OUTPUT = ["Mean", "average";
                     "Min", "min";

@@ -9,7 +9,20 @@
     type row = Row of int
     type col = Col of int
 
-    let makeCell (Row row) (Col col) = sprintf "%c%d" ('A' + char col) (row + 1)
+    let inline (+++) (Row r0) (Row r1) = Row <| r0 + r1
+
+    (* Only handles columns up to ZZ.
+       But there's no need to go beyond that now, so I'm going to leave it that way. *)
+    let makeCell (Row row) (Col col) = 
+        let charCol =
+            let maxCol = int 'Z' - int 'A'
+            if col <= maxCol
+                then 'A' + char col |> string
+                else ['A' + char (col / maxCol - 1); 'A' +  char (max (col % maxCol - 1) 0)]
+                     |> List.map string
+                     |> String.concat ""
+        sprintf "%s%d" charCol (row + 1)
+
     let range startRow startCol endRow endCol = sprintf "%s:%s" (makeCell startRow startCol) (makeCell endRow endCol)
     let singleCellRange row col =
         let cell = makeCell row col
@@ -100,6 +113,8 @@
         >> Seq.map fst
         >> Seq.toList
         >> List.sort (* We must sort, because the card headers are done in sorted order *)
+        >> Set.ofList (* Get rid of duplicates *)
+        >> Set.toList
 
     let cardCountsOf (stats : seq<playerStats>) = 
         let allCardsList = allCards stats
@@ -138,7 +153,7 @@
         Utils.flatten
         >> Seq.groupBy (fun playerStats -> playerStats.name)
         >> Seq.iter (fun (name, stats) ->
-            let lastRow = Seq.length stats 
+            let dataRowCount = Seq.length stats 
             let dataRowStart = Row 1
             let dataColStart = Col 1
             let worksheet = workbook.Worksheets.Add () :?> Worksheet
@@ -146,16 +161,20 @@
 
             let renderWithOffset ((row, col), entries) = render worksheet row col entries
 
-            [(Row 0, Col 1), Map.ofList [(Row 0, Col 0), "Score"];
-             (Row 0, Col 2), cardNamesOf stats;
-             (Row 1, Col 0), gameLabelsOf stats;
-             (Row lastRow, Col 0), aggrLabelsOf STATS_OUTPUT;
-             (Row lastRow, Col 1), aggrFormulasOf stats STATS_OUTPUT dataRowStart dataColStart]
-            |> List.iter renderWithOffset
+            let aggr = aggrFormulasOf stats STATS_OUTPUT dataRowStart dataColStart
+            let aggrRow = dataRowStart +++ (Row dataRowCount) +++ (Row AGGR_EMPTY_LINES)
 
             (* We have to do these separately because they return strings numbers instead of strings *)
             [(Row 1, Col 2), cardCountsOf stats;
              (Row 1, Col 1), scoresOf stats]
+            |> List.iter renderWithOffset
+
+            [(Row 0, Col 1), Map.ofList [(Row 0, Col 0), "Score"];
+             (Row 0, Col 2), cardNamesOf stats;
+             (Row 1, Col 0), gameLabelsOf stats;
+             (aggrRow, Col 0), aggrLabelsOf STATS_OUTPUT;
+             (aggrRow, Col 1), aggr]
             |> List.iter renderWithOffset)
+
 
 

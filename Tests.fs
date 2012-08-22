@@ -965,6 +965,25 @@ module ExcelRendererTests =
                 ]
         actual |> should equal expected
 
+    let [<Test>] ``allCards dups`` () =
+        [{name= "Gulliver"; score= 32.; cardCounts= Map.ofList [Victory Estate, 10.; Action Adventurer, 54.]}
+         {name= "Gulliver"; score= 28.; cardCounts= Map.ofList [Victory Estate, 15.; Coin Gold, 8.]}]
+        |> allCards
+        |> List.length
+        |> should equal 3
+
+    let [<Test>] ``makeCell 0,0`` () =
+        makeCell (Row 0) (Col 0) |> should equal "A1"
+
+    let [<Test>] ``makeCell 3,27`` () =
+        makeCell (Row 3) (Col 27) |> should equal "AB4"
+
+    let [<Test>] ``makeCell 2,25`` () =
+        makeCell (Row 2) (Col 25) |> should equal "Z3"
+
+    let [<Test>] ``makeCell 3,50`` () =
+        makeCell (Row 3) (Col 50) |> should equal "BA4"
+
 module GameTests =
     let [<Test>] ``get initial bots`` () =
         let bot = "Foo", [], []
