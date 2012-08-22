@@ -65,8 +65,6 @@ module Game =
     |> Async.RunSynchronously
     |> Array.toList
 
-  type playerStats = {name: string; score: float; cardCounts : Map<card, float>}
-
   let cardCountsOfPlayer player = 
     player
     |> Utils.allCards 
@@ -103,66 +101,8 @@ module Game =
 
      let workbook, analysisWorksheet = ExcelRenderer.makeWorksheet ()
      ExcelRenderer.addAnalysisData analysisWorksheet placements
-(*
-     gameResults
-     |> Utils.flatten
-     |> Seq.groupBy (fun playerStats -> playerStats.name)
-     |> Seq.iter (fun (name, statsSeq) ->
-        (* This could all be done as a Map<int * int, obj> instead of imperatively, as it is here.
-           That would be in the functional style of the rest of the program, and easier to test.
-           However, it works already, so I'm just going to leave it. *)
-        let worksheet = workbook.Worksheets.Add () :?> Worksheet
-        worksheet.Name <- name
+     ExcelRenderer.addBotData workbook gameResults
+     analysisWorksheet.Activate ()
 
-        let cardCounts = statsSeq
-                        |> Seq.map (fun stats -> Map.toList stats.cardCounts)
-
-        let cardCountsArr = cardCounts
-                            |> Array.ofSeq
-                            |> Array.map (fun statSeq -> statSeq |> Seq.map snd |> Array.ofSeq)
-
-        let cardNames = cardCounts
-                        |> Seq.toList
-                        |> Utils.flatten
-                        |> List.map fst
-                        |> Set.ofList
-                        |> Set.toArray
-                        |> Array.map (sprintf "%A")
-
-        worksheet.Range(Utils.singleCellRange (Row 0) (Col 1)).Value2 <- "Score"
-        worksheet.Range(Utils.range (Row 0) (Col 2) (Row 0) (Col <| Array.length cardNames)).Value2 <- cardNames
-        
-        let maxCol = (Array.length cardNames) + 1 (* for score *)
-        let nonLabelCols = seq { 1 .. maxCol - 1} (* -1 because upper bound in for loop is not exclusive *)
-
-        statsSeq
-        |> Seq.iteri (fun index stats -> 
-            let row = index + 1 (* +1 to leave room for the header *)
-            worksheet.Range(Utils.singleCellRange (Row row) (Col 0)).Value2 <- sprintf "Game %d" index
-            worksheet.Range(Utils.singleCellRange (Row row) (Col 1)).Value2 <- stats.score
-            for col in nonLabelCols do 
-                let cell = Utils.singleCellRange (Row row) (Col (col + 2)) (* +1 to leave room for game label; +1 for score *)
-                worksheet.Range(cell).Value2 <- cardCountsArr.[row - 1].[col - 1]
-            )
-        
-        let dataRows = Seq.length statsSeq
-        let lastRow = dataRows + 2 (* +1 for header; +1 for spacing *)
-        
-        let setFormula formula row = 
-            for col in nonLabelCols do
-                let formulaRange = Utils.singleCellRange (Row row) (Col col)
-                let sourceRange = Utils.range (Row 1) (Col col) (Row dataRows) (Col col)
-                worksheet.Range(formulaRange).Value2 <- sprintf "=%s(%s)" formula sourceRange
-
-        List.iteri
-            (fun index (name, formula) -> worksheet.Range(Utils.singleCellRange (Row <| lastRow + index) (Col 0)).Value2 <- name
-                                          setFormula formula <| lastRow + index)
-            ["Mean", "average";
-             "Min", "min";
-             "Max", "max";
-             "StdDev", "STDEV.P"] (* tbh I don't know which stddev formula is best *)
-        )
-        
-     firstWorksheet.Activate ()    *)               
      0
      

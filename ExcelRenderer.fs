@@ -2,7 +2,9 @@
     
     (* Excel documentation http://msdn.microsoft.com/en-us/library/hh297098.aspx *)
     open Microsoft.Office.Interop.Excel
-    
+    open Definitions
+    open Constants
+
     type row = Row of int
     type col = Col of int
 
@@ -74,3 +76,64 @@
             Source = worksheet.Range(sourceRange),
             Gallery = XlChartType.xlColumnStacked, 
             PlotBy = XlRowCol.xlRows)
+
+    let cardNamesOf statsSeq =
+        statsSeq
+        |> Seq.map (fun stats -> Map.toList stats.cardCounts)
+        |> Seq.toList
+        |> Utils.flatten
+        |> List.map fst
+        |> Set.ofList
+        |> Set.toList
+        |> List.mapi (fun index card -> (Row 0, Col index), sprintf "%A" card)
+        |> Map.ofList
+
+    let gameLabelsOf stats =
+        stats
+        |> Seq.mapi (fun index _ -> (Row index, Col 0), sprintf "Game %d" index)
+        |> Map.ofSeq
+
+    let cardCountsOf stats = 
+        let allCards = 
+            stats
+            |> Seq.map (fun stats -> Map.toSeq stats.cardCounts)
+            |> Seq.concat
+            |> Seq.map fst
+            |> Seq.toList
+            |> List.sort (* We must sort, because the card headers are done in sorted order *)
+        
+        stats
+        |> Seq.mapi
+            (fun gameIndex gameResults ->
+                Seq.mapi (fun cardIndex card -> (Row gameIndex, Col cardIndex), Utils.defaultFind card 0. gameResults.cardCounts) allCards)
+        |> Seq.concat
+        |> Map.ofSeq
+
+    let scoresOf stats = 
+        stats 
+        |> Seq.mapi (fun index gameResults -> (Row index, Col 0), gameResults.score)
+        |> Map.ofSeq
+
+    let aggrLabels = 
+        STATS_OUTPUT
+        |> List.mapi (fun index (name, _) -> (Row index, Col 0), name)
+        |> Map.ofList
+
+    let aggrFormulasOf stats = Map.empty
+
+    let addBotData (workbook : Workbook) gameResults =
+        let statsPerBot = gameResults
+                            |> Utils.flatten
+                            |> Seq.groupBy (fun playerStats -> playerStats.name)
+
+        Seq.iter (fun (name, stats) ->
+            let lastRow = Seq.length stats 
+            let worksheet = workbook.Worksheets.Add () :?> Worksheet
+            worksheet.Name <- name
+            render worksheet (Row 0) (Col 1) <| Map.ofList [(Row 0, Col 0), "Score"]
+            render worksheet (Row 0) (Col 2) <| cardNamesOf stats
+            render worksheet (Row 1) (Col 0) <| gameLabelsOf stats
+            render worksheet (Row 1) (Col 2) <| cardCountsOf stats
+            render worksheet (Row 1) (Col 1) <| scoresOf stats
+            render worksheet (Row lastRow) (Col 0) <| aggrLabels
+            render worksheet (Row lastRow) (Col 1) <| aggrFormulasOf stats)
