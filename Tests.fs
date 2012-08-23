@@ -45,23 +45,34 @@ module ActionTests =
     let [<Test>] ``bureaucrat defender no victory`` () = bureaucratTest [Coin Copper; Coin Silver]
 
     let [<Test>] ``cellar no discard`` () = let pId = PId 0
-                                            let cellar = ACellar []
+                                            let cellar = ACellar <| CellarChoice (fun _ -> [])
                                             (protoGame
                                             |> withActionCard pId Cellar
-                                            |> BotHandler.GameStateUpdate.act pId cellar).currentTurn.actions |> should equal 1
+                                            |> GameStateUpdate.act pId cellar).currentTurn.actions |> should equal 1
 
     let [<Test>] cellar () = let id = PId 0
                              let toDiscard = [Coin Copper; Coin Copper; Victory Duchy]
                              let toKeep = [Victory Province; Victory Estate; Coin Copper]
                              let deck = [Action Smithy; Action Village; Action Smithy]
-                             let cellar = ACellar toDiscard
+                             let cellar = ACellar <| CellarChoice (fun _ -> toDiscard)
                              let player = protoGame
                                              |> GameState.updatePlayer id
                                                 (fun player -> {player with hand = (Action Cellar)::toKeep @ toDiscard; deck = deck})
-                                             |> BotHandler.GameStateUpdate.act id cellar
+                                             |> GameStateUpdate.act id cellar
                                              |> GameState.getPlayer id
                              (Set.ofList player.hand) |> should equal (Set.ofList (toKeep @ deck))
                              player.deck |> should equal []
+
+    let [<Test>] ``cellar discard cards that aren't in hand`` () =
+        let aId = PId 1
+        let toDiscard = [Victory Province; Victory Duchy; Victory Gardens]
+        let cellar = ACellar <| CellarChoice (fun _ -> toDiscard)
+        let cards = protoGame
+                    |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Cellar]; deck=[]; discard=[]})
+                    |> GameStateUpdate.act aId cellar
+                    |> GameState.getPlayer aId
+                    |> Utils.allCards
+        List.iter (fun discarded -> cards |> should not' (contain discarded)) toDiscard
 
     let [<Test>] chapel () = let id = PId 0
                              let chapel = AChapel (Some (Action Smithy), Some (Coin Copper), Some (Victory Estate), None)

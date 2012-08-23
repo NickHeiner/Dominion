@@ -35,6 +35,14 @@ type thiefChoice =
             member x.CompareTo(y) = (match y with :? thiefChoice -> 0 | _ -> failwith "wrong type")
 
 [<CustomEquality; CustomComparison>]
+type cellarChoice =
+    CellarChoice of (card list -> card list)
+        override x.Equals(y) = (match y with :? cellarChoice -> true | _ -> false)
+        override x.GetHashCode() = 0
+        interface System.IComparable with
+            member x.CompareTo(y) = (match y with :? cellarChoice -> 0 | _ -> failwith "wrong type")
+
+[<CustomEquality; CustomComparison>]
 type libraryChoice =
     LibraryChoice of (ActCard -> discard)
         override x.Equals(y) = (match y with :? libraryChoice -> true | _ -> false)
@@ -42,8 +50,7 @@ type libraryChoice =
         interface System.IComparable with
             member x.CompareTo(y) = (match y with :? libraryChoice -> 0 | _ -> failwith "wrong type")
 
-(* TODO Cellar needs to be redone. Card list isn't viable as a way of communicating what to dispose of. *)
-type argActCard = ACellar of card list | AChapel of card option * card option* card option * card option
+type argActCard = ACellar of cellarChoice | AChapel of card option * card option* card option * card option
                 | AChancellor of reshuffle | AVillage | AWoodcutter | AFeast of card | AMilitia | AMoneylender | ARemodel of card * card
                 | ASmithy | ASpy of spyChoice | AThief of thiefChoice | AThroneRoom of argActCard 
                 | ACouncilRoom | AFestival | ALaboratory | ALibrary of libraryChoice | AMarket

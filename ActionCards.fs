@@ -27,12 +27,16 @@ let rec actionOfCard card aId gameState =
   if not <| isValidUsage aId gameState card then gameState else 
   match card with
   | ASmithy -> GameState.drawFor SMITHY_CARDS_DRAW aId gameState
-  | ACellar toDiscard -> List.fold (fun gameState card -> gameState
-                                                           |> GameState.discard card aId
-                                                           |> GameState.drawFor 1 aId)
-                                   gameState
-                                   toDiscard
-                         |> GameState.addActions 1
+  | ACellar (CellarChoice choice) -> let actorHand = gameState 
+                                                      |> GameState.getPlayer aId
+                                                      |> GameState.getHand
+                                     let toDiscard = Utils.ensureSubset actorHand <| choice actorHand
+                                     List.fold (fun gameState card -> gameState
+                                                                           |> GameState.discard card aId
+                                                                           |> GameState.drawFor 1 aId)
+                                                   gameState
+                                                   toDiscard
+                                         |> GameState.addActions 1
 
   | AChapel (card1, card2, card3, card4) -> List.fold
                                                 (fun gameState card -> GameState.trash card aId gameState) gameState
