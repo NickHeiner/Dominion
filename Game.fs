@@ -4,7 +4,7 @@ module Game =
   open Definitions
   open Constants
 
-  let gameOver gameState = gameState.turnsTaken >= Constants.TURN_LIMIT
+  let gameOver gameState = gameState.roundsPlayed >= Constants.ROUND_LIMIT
                             || Map.find (Victory Province) gameState.cards = 0
                             || Map.filter (fun _ count -> count = 0) gameState.cards |> Map.toList |> List.length >= 3
 
@@ -12,25 +12,29 @@ module Game =
     let cards = Utils.allCards player
     let gardensCount = Utils.countOccurences cards (Victory Gardens)
     (List.sumBy victoryPointsFor cards) + gardensCount * (List.length cards / GARDENS_FACTOR)
-    
+
+  let rec applyUpdate apply pId bot gameState =
+    let afterUpdate = apply pId bot gameState
+    if afterUpdate = gameState then gameState else applyUpdate apply pId bot afterUpdate
+
+  let applyTurn bot pId gameState =
+    let _, acts, buys = bot
+    applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction pId acts gameState
+                    |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy pId buys
+
   let rec round (gameState : gameState) = 
     (* TODO why do we need `players` as a separate var? Why not just gameState.players? *)
     let rec turn players gameState ((PId index) as pId) =
       if gameOver gameState then gameState else
         match players with
           | [] -> gameState
-          | hd::tl ->
-                      let rec applyUpdate apply bot gameState =
-                        let afterUpdate = apply pId bot gameState
-                        if afterUpdate = gameState then gameState else applyUpdate apply bot afterUpdate
-                      let _, acts, buys = hd.bot
-                      (* TODO does this handle multiple buys and acts on a turn? *)
-                      let afterTurn = applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction acts gameState
-                                        |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy buys
-                                        |> GameState.updatePlayer pId (fun player -> GameState.discardAll player |> GameState.draw 5)
-                                        |> GameState.nextTurn
+          | hd::tl -> let afterTurn = 
+                        applyTurn hd.bot pId gameState
+                        |> GameState.updatePlayer pId (fun player -> GameState.discardAll player |> GameState.draw 5)
+                        |> GameState.nextTurn
                       turn tl afterTurn <| PId (index + 1)
     let afterRound = turn gameState.players gameState <| PId 0
+    let afterRound = {afterRound with roundsPlayed = afterRound.roundsPlayed + 1}
     if gameOver afterRound then afterRound else round afterRound
 
   let getInitialState (bots : bot list) =

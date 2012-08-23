@@ -7,14 +7,14 @@ open Constants
 let initialTurn = {actions = 1; buys = 1; purchasingPower = 0}  
 
 let initialGameState = {players = []; cards = Map.empty; 
-                        trash = []; currentTurn = initialTurn; turnsTaken = 0 }
+                        trash = []; currentTurn = initialTurn; roundsPlayed = 0 }
 
 (* Resets the card counts to the initial amount of each card in `cards`. *)
 let withCards cards game = 
     let playerCount = List.length game.players
     {game with cards = List.fold (fun acc el -> Map.add el (initialCount playerCount el) acc) Map.empty cards}
 
-let nextTurn gameState = {gameState with currentTurn = initialTurn; turnsTaken = gameState.turnsTaken + 1}
+let nextTurn gameState = {gameState with currentTurn = initialTurn}
 
 let getPlayer (PId index) gameState = List.nth gameState.players index
                             

@@ -989,11 +989,37 @@ module ExcelRendererTests =
         makeCell (Row 3) (Col 50) |> should equal "BA4"
 
 module GameTests =
+    let [<Test>] ``multiple actions and buys`` () =
+        let toBuy0 = Victory Province
+        let toBuy1 = Action Woodcutter
+        let pId = PId 0
+        let bot = "foo", [Always, AFestival;
+                          Always, ASmithy;
+                          Always, AMine Silver], [Always, toBuy0;
+                                                  Always, toBuy1]
+        let afterTurn = protoGame
+                        |> GameState.withCards [toBuy0; toBuy1]
+                        |> GameState.updatePlayer pId (fun player -> {player with hand = [Action Festival; Action Smithy; Action Mine];
+                                                                                  deck = [Coin Gold; Coin Gold; Coin Silver]})
+                        |> Dominion.Game.applyTurn bot pId
+                        |> GameState.getPlayer pId
+                        |> Utils.allCards
+        
+        afterTurn |> should not' (contain <| Coin Silver)
+        afterTurn |> should contain toBuy0
+        afterTurn |> should contain toBuy1
+
     let [<Test>] ``get initial bots`` () =
         let bot = "Foo", [], []
         (Dominion.Game.getInitialState [bot]).players |> List.length |> should equal 1
 
     let [<Test>] ``playGame doesn't crash`` () = Dominion.Game.playGame () |> Dominion.Game.gameOver |> should be True
+
+    let [<Test>] ``game ends at round limit`` () =
+        protoGame
+        |> Dominion.Game.round
+        |> Dominion.Game.gameOver
+        |> should be True
 
     module ScorePlayerTests =
         let [<Test>] ``simple score`` () = Dominion.Game.score 
@@ -1020,7 +1046,7 @@ module GameTests =
         let [<Test>] ``game not over initially`` () = Dominion.Game.gameOver protoGame |> should be False
     
         let [<Test>] ``game over after turn limit`` () = Dominion.Game.gameOver
-                                                            {GameState.initialGameState with turnsTaken = Constants.TURN_LIMIT + 1}
+                                                            {GameState.initialGameState with roundsPlayed = Constants.ROUND_LIMIT + 1}
                                                             |> should be True
 
         let [<Test>] ``game over when provinces gone`` () = Dominion.Game.gameOver
