@@ -44,8 +44,9 @@ module Game =
                                 |> Set.toList
     
     if List.length actionCardsRequired > ACTION_CARDS_PER_GAME
-        then invalidArg "bots" <| sprintf "Each game may only have %d action cards, but the chosen bots require: %A"
+        then invalidArg "bots" <| sprintf "Each game may only have %d action cards, but the chosen bots require %d: %A"
                                           ACTION_CARDS_PER_GAME
+                                          (List.length actionCardsRequired)
                                           actionCardsRequired
       
     bots
@@ -63,6 +64,7 @@ module Game =
     Bot.bots |> getInitialState |> round 
 
   let playGames () =
+    (* Maybe we should validate the game (ie check count of action cards required) before launching the threads *)
     Async.Parallel [ for i in 0..GAMES_TO_PLAY - 1 -> async { let result = playGame ()
                                                               printf "."
                                                               return result } ]

@@ -85,6 +85,19 @@ module ActionTests =
                              |> Set.ofList
                              |> should equal toKeep
 
+    let [<Test>] ``chapel invalid trash`` () =
+        let aId = PId 1
+        let validToTrash = Coin Gold;
+        let toKeep = [Victory Duchy; Action Mine]
+        let preAction = protoGame
+                        |> GameState.updatePlayer aId (fun player -> {player with hand = validToTrash::toKeep})
+        preAction
+        |> withActionCard aId Chapel
+        |> GameStateUpdate.act aId (AChapel (Some <| Victory Estate, Some <| Victory Province, Some <| Action Village, Some validToTrash))
+        |> GameState.getPlayer aId
+        |> GameState.getHand
+        |> memberEquals toKeep
+
     let [<Test>] chancellor () = let aId = PId 0
                                  let deck = [Coin Copper; Coin Gold; Victory Estate]
                                  let chancellor = AChancellor NoReshuffle
@@ -110,7 +123,7 @@ module ActionTests =
     let [<Test>] village () = let id = PId 0
                               let initialHandSize = List.length (GameState.getPlayer id protoGame).hand
                               let afterAction = useAction id AVillage
-                              afterAction.currentTurn.actions |> should equal 1
+                              afterAction.currentTurn.actions |> should equal VILLAGE_ACTIONS
                               List.length (GameState.getPlayer id afterAction).hand |> should equal (initialHandSize + 1)
 
     let [<Test>] woodcutter () = let id = PId 0

@@ -38,9 +38,14 @@ let rec actionOfCard card aId gameState =
                                                    toDiscard
                                          |> GameState.addActions 1
 
+    (* Does this need validation? *)
   | AChapel (card1, card2, card3, card4) -> List.fold
                                                 (fun gameState card -> GameState.trash card aId gameState) gameState
-                                                <| Utils.withoutNone [card1; card2; card3; card4]
+                                                ([card1; card2; card3; card4]
+                                                 |> Utils.withoutNone
+                                                 |> Utils.ensureSubset (gameState
+                                                                        |> GameState.getPlayer aId 
+                                                                        |> GameState.getHand))
   
   | AChancellor reshuffle -> (match reshuffle with
                                 | Reshuffle -> GameState.updatePlayer aId
@@ -48,7 +53,7 @@ let rec actionOfCard card aId gameState =
                                 | NoReshuffle -> gameState) |> GameState.addPurchasingPower CHANCELLOR_PURCHASING_POWER
   
   | AVillage -> gameState
-                |> GameState.addActions 1
+                |> GameState.addActions VILLAGE_ACTIONS
                 |> GameState.drawFor 1 aId
   
   | AWoodcutter -> gameState

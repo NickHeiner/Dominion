@@ -2,8 +2,8 @@
 
 open Definitions
 
-(* Cards that every game starts with *)
-let STARTING_CARDS = [Victory Province; Victory Duchy; Victory Estate; Victory Curse; Coin Gold; Coin Silver; Coin Copper]
+(* Cards that start in the supply for each game *)
+let STARTING_CARDS = [Victory Province; Victory Duchy; Victory Estate; Victory Curse; Victory Gardens; Coin Gold; Coin Silver; Coin Copper]
 
 let ROUND_LIMIT = 10000
 
@@ -52,6 +52,7 @@ let LIBRARY_CARD_COUNT = 7
 let WORKSHOP_CARD_GAIN_MAX_COST = 4
 let BUREAUCRAT_CARD_GAIN = Coin Silver
 let MOAT_CARD_COUNT = 2
+let VILLAGE_ACTIONS = 2
 
 let initialPlayer = {hand=[]; discard=[]; deck = List.replicate 7 (Coin Copper) @ List.replicate 3 (Victory Estate); bot = "Pass", [], []; militiaReaction = fun _ -> (None, None, None)}
 
