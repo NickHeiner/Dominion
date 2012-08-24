@@ -38,7 +38,6 @@ let rec actionOfCard card aId gameState =
                                                    toDiscard
                                          |> GameState.addActions 1
 
-    (* Does this need validation? *)
   | AChapel (card1, card2, card3, card4) -> List.fold
                                                 (fun gameState card -> GameState.trash card aId gameState) gameState
                                                 ([card1; card2; card3; card4]

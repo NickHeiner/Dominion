@@ -36,6 +36,7 @@
     let allCards gameState playerId = List.nth gameState.players playerId |> Utils.allCards
     let canBuy pId gameState card = GameState.totalPurchasingPower pId gameState >= Constants.cardCost card
                                     && gameState.currentTurn.buys > 0
+                                    && Utils.defaultFind card 0 gameState.cards > 0
 
     let canAct aId gameState actCard = Utils.contains (Action <| Definitions.getRaw actCard) (GameState.getPlayer aId gameState).hand
                                         && gameState.currentTurn.actions > 0
@@ -50,12 +51,12 @@
 
         let buy pId card gameState = let availableMoney = GameState.totalPurchasingPower pId gameState
                                      let cost = cardCost card 
-                                     let withPlayer = GameState.updatePlayer pId
-                                                        (fun player -> {player with discard = card::player.discard}) gameState
-                                     {withPlayer with cards = Map.add card ((Map.find card withPlayer.cards) - 1) withPlayer.cards }
-                                     |> GameState.withTurn {withPlayer.currentTurn
+                                     let withPlayer = GameState.addCards 1 pId card gameState
+                                     GameState.withTurn {withPlayer.currentTurn
                                                             with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card}
+                                                        withPlayer
 
+        (* TODO Why do all these take acts or buys if they're already getting pId and gameState? It's redundant. *)
         let findFirstValidAction pId acts gameState =
             match List.tryFind (fun (cond, actCard) -> evalCond gameState pId cond
                                                        && canAct pId gameState actCard) acts with

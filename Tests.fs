@@ -660,10 +660,11 @@ module ActionTests =
 module BotTests =
     let buy toBuy hand game = 
         let id = PId 0
-        (game 
+        game 
         |> GameState.updatePlayer id (fun player -> {player with hand = hand})
         |> BotHandler.GameStateUpdate.applyFirstValidBuy id [(Always, toBuy)]
-        |> GameState.getPlayer id).discard
+        |> GameState.getPlayer id
+        |> GameState.getDiscard
 
     let [<Test>] ``pass bot does nothing`` () = 
         BotHandler.GameStateUpdate.applyFirstValidBuy (PId 0) [] protoGame 
@@ -674,9 +675,17 @@ module BotTests =
         let toBuy = Victory Duchy
         buy toBuy [Coin Gold; Coin Gold] protoGame |> should contain toBuy
 
+    (* TODO these only check the player in question's discard pile -
+       shouldn't it just check that gameState is not changed at all? *)
+
     let [<Test>] ``illegal buy not enough money`` () = 
         let toBuy = Victory Province
         buy toBuy [Coin Gold; Coin Gold] protoGame |> Utils.contains toBuy |> should be False
+
+    let [<Test>] ``illegal buy card not in game`` () =
+        let toBuy = Action Mine
+        let game = {protoGame with cards = Map.empty}
+        buy toBuy [Coin Gold; Coin Gold] game |> Utils.contains toBuy |> should be False
 
     let [<Test>] ``illegal buy not enough buys`` () = 
         let toBuy = Victory Estate
@@ -808,26 +817,29 @@ module BotTests =
 
     module GameStateUpdateTests =
         module BuyTests = 
-            let preGameState id = protoGame |> GameState.updatePlayer id (fun player -> {player with hand = [Coin Gold]})
-            let doBuy id toBuy = BotHandler.GameStateUpdate.buy id toBuy (preGameState id)
+            (* TODO buy testing is sort of a mess. There are similar but not quite redundant functions elsewhere, like `buy`. *)
+            let preGameState pId toBuy = {protoGame with cards = Map.add toBuy 1 protoGame.cards}
+                                         |> GameState.updatePlayer pId (fun player -> {player with hand = [Coin Gold]})
+            let doBuy pId toBuy = BotHandler.GameStateUpdate.buy pId toBuy (preGameState pId toBuy)
 
             let [<Test>] ``buy updates player discard`` () = let id = PId 0
                                                              let toBuy = Victory Estate
                                                              let afterBuy = doBuy id toBuy
                                                              (GameState.getPlayer id afterBuy).discard |> List.head |> should equal toBuy
 
-            let [<Test>] ``buy updates card counts`` () = let id = PId 0
+            let [<Test>] ``buy updates card counts`` () = let pId = PId 0
                                                           let toBuy = Victory Estate
-                                                          let afterBuy = doBuy id toBuy
-                                                          afterBuy.cards |> Map.find toBuy |> should equal
-                                                             ((protoGame.cards |> Map.find toBuy) - 1)
+                                                          let afterBuy = doBuy pId toBuy
+                                                          afterBuy.cards
+                                                          |> Map.find toBuy
+                                                          |> should equal (Map.find toBuy (preGameState pId toBuy).cards  - 1)
 
             let [<Test>] ``buy lowers purchasing power`` () = let id = PId 0
                                                               let toBuy = Victory Estate
                                                               let afterBuy = doBuy id toBuy
                                                               GameState.totalPurchasingPower id afterBuy
                                                                 |> should equal
-                                                                    ((GameState.totalPurchasingPower id (preGameState id))
+                                                                    ((GameState.totalPurchasingPower id (preGameState id toBuy))
                                                                         - Constants.cardCost toBuy)
     
 module UtilTests =
@@ -1013,6 +1025,38 @@ module ExcelRendererTests =
         makeCell (Row 3) (Col 50) |> should equal "BA4"
 
 module GameTests =
+    let [<Test>] ``card limits enforced within same round`` () =
+        let buyProvince = "buyer", [], [Always, Victory Province]
+        {protoGame with cards   = Map.ofList [Victory Province, 1];
+                        players = List.replicate 2 {initialPlayer with hand = List.replicate 5 (Coin Gold);
+                                                                       bot  = buyProvince}}
+        |> Dominion.Game.round
+        |> GameState.getPlayers
+        |> List.map Utils.allCards
+        |> Utils.flatten
+        |> List.filter (function Victory Province -> true | _ -> false)
+        |> List.length
+        |> should equal 1
+
+    let [<Test>] ``card limits enforced within same turn`` () =
+        let toBuy = Victory Duchy
+        let supply = 1
+        let pId = PId 0
+        let bot = "buyer",
+                  [],
+                  [Always, toBuy]
+        {protoGame with cards = Map.ofList [Victory Duchy, supply]; currentTurn = {protoGame.currentTurn with buys = supply * 3}}
+        |> GameState.updatePlayer pId (fun player -> {player with bot = bot;
+                                                                  hand = List.replicate (supply * 5) <| Coin Gold;
+                                                                  deck=[];
+                                                                  discard=[]})
+        |> Dominion.Game.applyTurn bot pId
+        |> GameState.getPlayer pId
+        |> Utils.allCards
+        |> List.filter ((=) toBuy)
+        |> List.length
+        |> should equal supply
+
     let [<Test>] ``multiple actions and buys`` () =
         let toBuy0 = Victory Province
         let toBuy1 = Action Woodcutter

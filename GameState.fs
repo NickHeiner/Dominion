@@ -75,6 +75,7 @@ let discardCardsFromDeck cards pId initGame = List.fold (fun game card -> discar
 let trash = removeCard (fun _ discard -> discard) setHand getHand Yes
 let trashFromDeck = removeCard (fun _ discard -> discard) (fun player deck -> {player with deck = deck}) (fun player -> player.deck) Yes
 
+(* TODO does this remove from the supply? *)
 let gainCard card id = updatePlayer id (fun player -> {player with discard = card::player.discard})
 
 let getIdRange gameState = { 0 .. List.length gameState.players - 1} |> Seq.map PId
