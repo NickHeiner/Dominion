@@ -89,8 +89,10 @@ module Game =
      printfn "Dominion!"
      printfn "Kicking off %d games" GAMES_TO_PLAY
 
+     let finishedGames = playGames ()
+
      let gameResults =
-        playGames () 
+        finishedGames 
         |> List.map (gameToPlayerStats Bot.bots)
 
      let placements = 
@@ -108,6 +110,7 @@ module Game =
      let workbook, analysisWorksheet = ExcelRenderer.makeWorksheet ()
      ExcelRenderer.addAnalysisData analysisWorksheet placements
      ExcelRenderer.addBotData workbook gameResults
+     ExcelRenderer.addLog workbook <| List.map (fun game -> game.log) finishedGames
      analysisWorksheet.Activate ()
 
      0

@@ -1024,6 +1024,28 @@ module ExcelRendererTests =
     let [<Test>] ``makeCell 3,50`` () =
         makeCell (Row 3) (Col 50) |> should equal "BA4"
 
+    let [<Test>] ``get log cells empty`` () =
+        getLogCells [] |> should equal Map.empty
+
+    let [<Test>] getLogCellsTest () =
+        let actual = getLogCells [[{pId = PId 0; event = Buy <| Action Smithy};
+                                   {pId = PId 1; event = Act <| AMine Silver}];
+
+                                  [{pId = PId 5; event = Buy <| Victory Gardens}]]
+
+        actual |> should equal (Map.ofList [(Row 0, Col 0), "0";
+                                            (Row 0, Col 1), "0";
+                                            (Row 0, Col 2), "Buy";
+                                            (Row 0, Col 3), "Action Smithy";
+                                            (Row 1, Col 0), "0";
+                                            (Row 1, Col 1), "1";
+                                            (Row 1, Col 2), "Act";
+                                            (Row 1, Col 3), "AMine Silver";
+                                            (Row 2, Col 0), "1";
+                                            (Row 2, Col 1), "5";
+                                            (Row 2, Col 2), "Buy";
+                                            (Row 2, Col 3), "Victory Gardens";])
+
 module GameTests =
     let [<Test>] ``card limits enforced within same round`` () =
         let buyProvince = "buyer", [], [Always, Victory Province]
