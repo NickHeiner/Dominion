@@ -978,7 +978,7 @@ module ExcelRendererTests =
 
     let [<Test>] testCardCounts () =
         let actual = cardCountsOf statSeq
-        let expected = Map.ofList [(Row 0, Col 0), 10.; (Row 0, Col 1), 0.; (Row 0, Col 2), 0.; (Row 0, Col 3), 54.;
+        let expected = Map.ofList [(Row 0, Col 0), 10.; (Row 0, Col 1), 0.; (Row 0, Col 2), 0.; (Row 0, Col 3), 54.
                                    (Row 1, Col 0), 0.; (Row 1, Col 1), 15.; (Row 1, Col 2), 8.; (Row 1, Col 3), 0.]
         actual |> should equal expected
 
@@ -991,17 +991,17 @@ module ExcelRendererTests =
 
     let [<Test>] testAggrLabelsOf () =
         let col = Col 0
-        statsOutput |> aggrLabelsOf |> should equal <| Map.ofList [(Row 0, col), "Marmalade";
-                                                                   (Row 1, col), "Baboons";
+        statsOutput |> aggrLabelsOf |> should equal <| Map.ofList [(Row 0, col), "Marmalade"
+                                                                   (Row 1, col), "Baboons"
                                                                    (Row 2, col), "Gin"]
 
     let [<Test>] testAggrFormulasOf () =
         let actual = aggrFormulasOf statSeq statsOutput (Row 2) (Col 2)
         let expected =
             Map.ofList
-                [(Row 0, Col 0), "=marma(C3:C5)"; (Row 0, Col 1), "=marma(D3:D5)"; (Row 0, Col 2), "=marma(E3:E5)"; (Row 0, Col 3), "=marma(F3:F5)"; (Row 0, Col 4), "=marma(G3:G5)";
-                 (Row 1, Col 0), "=bnbs(C3:C5)"; (Row 1, Col 1), "=bnbs(D3:D5)"; (Row 1, Col 2), "=bnbs(E3:E5)"; (Row 1, Col 3), "=bnbs(F3:F5)"; (Row 1, Col 4), "=bnbs(G3:G5)";
-                 (Row 2, Col 0), "=bucket(C3:C5)"; (Row 2, Col 1), "=bucket(D3:D5)"; (Row 2, Col 2), "=bucket(E3:E5)"; (Row 2, Col 3), "=bucket(F3:F5)"; (Row 2, Col 4), "=bucket(G3:G5)";
+                [(Row 0, Col 0), "=marma(C3:C5)"; (Row 0, Col 1), "=marma(D3:D5)"; (Row 0, Col 2), "=marma(E3:E5)"; (Row 0, Col 3), "=marma(F3:F5)"; (Row 0, Col 4), "=marma(G3:G5)"
+                 (Row 1, Col 0), "=bnbs(C3:C5)"; (Row 1, Col 1), "=bnbs(D3:D5)"; (Row 1, Col 2), "=bnbs(E3:E5)"; (Row 1, Col 3), "=bnbs(F3:F5)"; (Row 1, Col 4), "=bnbs(G3:G5)"
+                 (Row 2, Col 0), "=bucket(C3:C5)"; (Row 2, Col 1), "=bucket(D3:D5)"; (Row 2, Col 2), "=bucket(E3:E5)"; (Row 2, Col 3), "=bucket(F3:F5)"; (Row 2, Col 4), "=bucket(G3:G5)"
                 ]
         actual |> should equal expected
 
@@ -1025,26 +1025,30 @@ module ExcelRendererTests =
         makeCell (Row 3) (Col 50) |> should equal "BA4"
 
     let [<Test>] ``get log cells empty`` () =
-        getLogCells [] |> should equal Map.empty
+        getLogCells Map.empty [] |> should equal Map.empty
 
     let [<Test>] getLogCellsTest () =
-        let actual = getLogCells [[{pId = PId 0; event = Buy <| Action Smithy};
-                                   {pId = PId 1; event = Act <| AMine Silver}];
+        let actual = getLogCells (Map.ofList [(PId 0, "Gulliver")
+                                              (PId 1, "Samson")
+                                              (PId 5, "Loon")])
+        
+                                [[{pId = PId 0; event = Buy <| Action Smithy}
+                                  {pId = PId 1; event = Act <| AMine Silver}]
 
-                                  [{pId = PId 5; event = Buy <| Victory Gardens}]]
+                                 [{pId = PId 5; event = Buy <| Victory Gardens}]]
 
-        actual |> should equal (Map.ofList [(Row 0, Col 0), "0";
-                                            (Row 0, Col 1), "0";
-                                            (Row 0, Col 2), "Buy";
-                                            (Row 0, Col 3), "Action Smithy";
-                                            (Row 1, Col 0), "0";
-                                            (Row 1, Col 1), "1";
-                                            (Row 1, Col 2), "Act";
-                                            (Row 1, Col 3), "AMine Silver";
-                                            (Row 2, Col 0), "1";
-                                            (Row 2, Col 1), "5";
-                                            (Row 2, Col 2), "Buy";
-                                            (Row 2, Col 3), "Victory Gardens";])
+        actual |> should equal (Map.ofList [(Row 0, Col 0), "0"
+                                            (Row 0, Col 1), "Gulliver"
+                                            (Row 0, Col 2), "Buy"
+                                            (Row 0, Col 3), "Action Smithy"
+                                            (Row 1, Col 0), "0"
+                                            (Row 1, Col 1), "Samson"
+                                            (Row 1, Col 2), "Act"
+                                            (Row 1, Col 3), "AMine Silver"
+                                            (Row 2, Col 0), "1"
+                                            (Row 2, Col 1), "Loon"
+                                            (Row 2, Col 2), "Buy"
+                                            (Row 2, Col 3), "Victory Gardens"])
 
 module GameTests =
     let [<Test>] ``card limits enforced within same round`` () =

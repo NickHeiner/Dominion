@@ -180,30 +180,36 @@
         | Act card -> "Act", Utils.toString card
         | Buy card -> "Buy", Utils.toString card
     
-    let getLogCells =
+    let getLogCells nameLookup =
         List.mapi (fun gameId log -> List.map (fun entry -> gameId, entry) log)
         >> Utils.flatten
         >> List.mapi (fun rowIndex (gameId, logEntry) -> 
                         let row = Row rowIndex
-                        let (PId playerIndex) = logEntry.pId
                         let eventName, eventArg = unpackEvent logEntry.event
                         [(row, Col 0), Utils.toString gameId;
-                            (row, Col 1), Utils.toString playerIndex;
+                            (row, Col 1), Map.find logEntry.pId nameLookup;
                             (row, Col 2), eventName;
                             (row, Col 3), eventArg])
         >> Seq.concat
         >> Map.ofSeq
 
-    let addLog (workbook : Workbook) logs = 
+    let addLog (workbook : Workbook) games = 
         let worksheet = workbook.Worksheets.Add () :?> Worksheet
         worksheet.Name <- "Log"
 
         render worksheet (Row 0) (Col 0) <| Map.ofList [(Row 0, Col 0), "Game Id";
-                                                        (Row 0, Col 1), "Player Id";
+                                                        (Row 0, Col 1), "Player";
                                                         (Row 0, Col 2), "Event";
                                                         (Row 0, Col 3), "Arg";]
         
-        render worksheet (Row 1) (Col 0) <| getLogCells logs
+        let nameLookup =
+            match games with
+            |   hd::_ -> hd.players
+                         |> List.mapi (fun index player -> (PId index, Utils.fst3 player.bot))
+                         |> Map.ofList
+            |   [] -> Map.empty
+        
+        render worksheet (Row 1) (Col 0) <| getLogCells nameLookup (List.map (fun game -> game.log) games)
 
 
 

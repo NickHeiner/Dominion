@@ -109,8 +109,8 @@ module Game =
 
      let workbook, analysisWorksheet = ExcelRenderer.makeWorksheet ()
      ExcelRenderer.addAnalysisData analysisWorksheet placements
+     ExcelRenderer.addLog workbook finishedGames
      ExcelRenderer.addBotData workbook gameResults
-     ExcelRenderer.addLog workbook <| List.map (fun game -> game.log) finishedGames
      analysisWorksheet.Activate ()
 
      0
