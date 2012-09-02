@@ -6,8 +6,7 @@ open Constants
 (* This would be defined in Constants if not for mutual recursion issues *)
 let initialTurn = {actions = 1; buys = 1; purchasingPower = 0}  
 
-let initialGameState = {players = []; cards = Map.empty; 
-                        trash = []; currentTurn = initialTurn; roundsPlayed = 0 }
+let initialGameState = {players = []; cards = Map.empty; trash = []; currentTurn = initialTurn; roundsPlayed = 0; log = [] }
 
 (* Resets the card counts to the initial amount of each card in `cards`. *)
 let withCards cards game = 

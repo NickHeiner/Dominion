@@ -102,7 +102,10 @@ type player = {hand : card list; deck : card list; discard : card list; bot : bo
                     
                 override x.GetHashCode() = hash (x.hand, x.deck, x.discard, x.bot)
 
+type botEvent = Act of argActCard | Buy of card
+type logEvent = {pId: pId; event: botEvent}
+
 (* each round = every player taking a turn *)
-type gameState = {players : player list; cards : Map<card, int>; trash : card list; currentTurn : turn; roundsPlayed : int}
+type gameState = {players : player list; cards : Map<card, int>; trash : card list; currentTurn : turn; roundsPlayed : int; log: logEvent list}
 (* TODO do score and cardCounts need to be floats? If we're not using these types for aggregation, I don't think so. *)
 type playerStats = {name: string; score: float; cardCounts : Map<card, float>}

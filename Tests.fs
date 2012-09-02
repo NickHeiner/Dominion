@@ -1057,7 +1057,7 @@ module GameTests =
         |> List.length
         |> should equal supply
 
-    let [<Test>] ``multiple actions and buys`` () =
+    let [<Test>] ``multiple actions and buys logged`` () =
         let toBuy0 = Victory Province
         let toBuy1 = Action Woodcutter
         let pId = PId 0
@@ -1070,12 +1070,23 @@ module GameTests =
                         |> GameState.updatePlayer pId (fun player -> {player with hand = [Action Festival; Action Smithy; Action Mine];
                                                                                   deck = [Coin Gold; Coin Gold; Coin Silver]})
                         |> Dominion.Game.applyTurn bot pId
-                        |> GameState.getPlayer pId
-                        |> Utils.allCards
         
-        afterTurn |> should not' (contain <| Coin Silver)
-        afterTurn |> should contain toBuy0
-        afterTurn |> should contain toBuy1
+        let afterTurnPlayerCards =
+            afterTurn
+            |> GameState.getPlayer pId
+            |> Utils.allCards
+
+        afterTurnPlayerCards |> should not' (contain <| Coin Silver)
+        afterTurnPlayerCards |> should contain toBuy0
+        afterTurnPlayerCards |> should contain toBuy1
+
+        afterTurn.log
+        |> List.rev
+        |> should equal [{pId = pId; event = Act AFestival};
+                         {pId = pId; event = Act ASmithy};
+                         {pId = pId; event = Act <| AMine Silver};
+                         {pId = pId; event = Buy toBuy0};
+                         {pId = pId; event = Buy toBuy1}]
 
     let [<Test>] ``get initial bots`` () =
         let bot = "Foo", [], []

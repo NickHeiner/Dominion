@@ -71,11 +71,11 @@
         
         let applyFirstValidBuy pId buys gameState =
             match findFirstValidBuy pId buys gameState with
-                | Some card -> buy pId card gameState
+                | Some card -> {buy pId card gameState with log = {pId = pId; event = Buy card}::gameState.log}
                 | None -> gameState
 
         let applyFirstValidAction pId acts gameState =
             match findFirstValidAction pId acts gameState with
-                | Some card -> act pId card gameState
+                | Some card -> {act pId card gameState with log = {pId = pId; event = Act card}::gameState.log}
                 | None -> gameState
 
