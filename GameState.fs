@@ -108,3 +108,8 @@ let ensureCardCountInDeck pId count gameState = if deckLen pId gameState >= coun
 let hasMoat pId game = getPlayer pId game
                         |> getHand
                         |> Utils.contains (Action Moat)
+
+let cardCount aId card =
+    getPlayer aId
+    >> Utils.allCards
+    >> Utils.countOccurs card

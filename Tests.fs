@@ -759,6 +759,14 @@ module BotTests =
         BotHandler.evalCond protoGame (PId 1) (CardsRemainingLessThan (4, Victory Province))
         |> should be False
 
+    let [<Test>] ``evalCond more of first`` () =
+        let pId = PId 1
+        let more = Action Smithy
+        let less = Victory Province
+        let game = GameState.updatePlayer pId (fun p -> {p with deck = (List.replicate 5 more) @ (List.replicate 2 less)}) protoGame
+        BotHandler.evalCond game pId (MoreOfFirst (more, less)) |> should be True
+        BotHandler.evalCond game pId (MoreOfFirst (less, more)) |> should be False
+
     let [<Test>] ``find valid action`` () =
         let aId = PId 0
         let toAct = ASmithy

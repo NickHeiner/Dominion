@@ -86,6 +86,8 @@ let getRaw = function
 type turn = {actions : int; buys : int; purchasingPower : int}
 
 type cond = Always | ExpectedPerHandLessThan of float * card | CountInCardsLessThan of int * card | CardsRemainingLessThan of int * card
+            | MoreOfFirst of card * card
+
 type act = (cond * argActCard) list
 type buy = (cond * card) list
 type bot = string * act * buy (* string = name *)
