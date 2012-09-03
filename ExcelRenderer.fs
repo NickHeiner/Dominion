@@ -181,7 +181,7 @@
         | Buy card -> "Buy", Utils.toString card
     
     let getLogCells nameLookup =
-        List.mapi (fun gameId log -> List.map (fun entry -> gameId, entry) log)
+        List.mapi (fun gameId -> List.map (fun entry -> gameId, entry) >> List.rev)
         >> Utils.flatten
         >> List.mapi (fun rowIndex (gameId, logEntry) -> 
                         let row = Row rowIndex

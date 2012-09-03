@@ -1032,8 +1032,9 @@ module ExcelRendererTests =
                                               (PId 1, "Samson")
                                               (PId 5, "Loon")])
         
-                                [[{pId = PId 0; event = Buy <| Action Smithy}
-                                  {pId = PId 1; event = Act <| AMine Silver}]
+                                (* Log is built up in reversed order for each game *)
+                                [[{pId = PId 1; event = Act <| AMine Silver}
+                                  {pId = PId 0; event = Buy <| Action Smithy}]
 
                                  [{pId = PId 5; event = Buy <| Victory Gardens}]]
 
