@@ -767,6 +767,12 @@ module BotTests =
         BotHandler.evalCond game pId (MoreOfFirst (more, less)) |> should be True
         BotHandler.evalCond game pId (MoreOfFirst (less, more)) |> should be False
 
+    let [<Test>] ``evalCond moreOfFirst none of either card`` () =
+        let check more less = BotHandler.evalCond protoGame (PId 0) (MoreOfFirst (more, less))
+        let missingCard = Victory Province
+        let missingCard' = Victory Curse
+        (check missingCard missingCard' || check missingCard' missingCard) |> should be True
+
     let [<Test>] ``find valid action`` () =
         let aId = PId 0
         let toAct = ASmithy

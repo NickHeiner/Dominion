@@ -29,7 +29,7 @@
                                                         total = 0. || expected > occurences / total
         |  CountInCardsLessThan (count, card) -> count > GameState.cardCount aId card gameState
         |  CardsRemainingLessThan (count, card) -> count > Utils.defaultFind card 0 gameState.cards
-        |  MoreOfFirst (moreOf, lessOf) -> GameState.cardCount aId moreOf gameState > GameState.cardCount aId lessOf gameState
+        |  MoreOfFirst (moreOf, lessOf) -> GameState.cardCount aId moreOf gameState >= GameState.cardCount aId lessOf gameState
     
     let allCards gameState playerId = List.nth gameState.players playerId |> Utils.allCards
     let canBuy pId gameState card = GameState.totalPurchasingPower pId gameState >= Constants.cardCost card

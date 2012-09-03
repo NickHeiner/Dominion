@@ -17,8 +17,8 @@ let cellarVictories = Always, ACellar <| CellarChoice (List.filter (function Vic
 let maintainEqualCounts card card' = [MoreOfFirst (card, card'), card'
                                       MoreOfFirst (card', card), card]
 
-let smithy = "Smithy", [(Always, ASmithy)], standard [maintainExpectedPerHand 1. <| Action Smithy;
-                                                      (Always, Coin Gold);
+let smithy = "Smithy", [(Always, ASmithy)], standard [maintainExpectedPerHand 1. <| Action Smithy
+                                                      (Always, Coin Gold)
                                                       (Always, Coin Silver)]
 
 let mineSmithy = "MineSmithy", 
