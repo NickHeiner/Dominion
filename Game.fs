@@ -51,7 +51,7 @@ module Game =
       
     bots
     |> List.fold (fun gameState bot ->
-                    let newPlayerWithBot = {Constants.initialPlayer with bot = bot}
+                    let newPlayerWithBot = {GameState.initialPlayer () with bot = bot}
                     {gameState with players = newPlayerWithBot::gameState.players})
                  GameState.initialGameState   
     |> GameState.withCards (STARTING_CARDS @ actionCardsRequired)

@@ -924,19 +924,19 @@ module GameStateTests =
         let [<Test>] ``simple discard all`` () = let hand = [Victory Curse; Victory Estate; Victory Province]
                                                  let discard = [Coin Copper; Action Smithy]
                                                  let afterDiscard =
-                                                    GameState.discardAll {Constants.initialPlayer with hand=hand; discard=discard}
+                                                    GameState.discardAll {GameState.initialPlayer () with hand=hand; discard=discard}
                                                  afterDiscard.hand |> should equal []
                                                  afterDiscard.discard |> should equal (hand @ discard)
 
     let [<Test>] simpleDraw () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; Coin Gold]
-                                 let afterDraw = GameState.draw 5 {initialPlayer with deck = deck}
+                                 let afterDraw = GameState.draw 5 {GameState.initialPlayer () with deck = deck}
                                  afterDraw.hand |> Set.ofList |> should equal (Set.ofList deck)
                                  afterDraw.deck |> should equal []
 
     let [<Test>] biggerDeck () = let deck = [Victory Estate; Victory Province; Coin Copper; Coin Silver; 
                                                 Coin Gold; Victory Estate; Coin Silver; Coin Silver]
                                  let drawAmount = 5
-                                 let afterDraw = GameState.draw drawAmount {initialPlayer with deck = deck}
+                                 let afterDraw = GameState.draw drawAmount {GameState.initialPlayer () with deck = deck}
                                  afterDraw.hand |> List.length |> should equal drawAmount
                                  afterDraw.hand |> Set.ofList |> should equal (deck |> List.toSeq |> Seq.take drawAmount |> Set.ofSeq)
                                  afterDraw.deck |> should equal (deck |> List.toSeq |> Seq.skip drawAmount |> Seq.toList)
@@ -944,7 +944,7 @@ module GameStateTests =
     let [<Test>] smallerThanDeck () = let deck = [Victory Estate]
                                       let discard = List.replicate 10 (Coin Copper)
                                       let drawAmount = 5
-                                      let afterDraw = GameState.draw drawAmount {initialPlayer with deck = deck; discard = discard}
+                                      let afterDraw = GameState.draw drawAmount {GameState.initialPlayer () with deck = deck; discard = discard}
                                       afterDraw.hand |> List.length |> should equal drawAmount
                                       afterDraw.discard |> should equal []
 
@@ -1099,8 +1099,8 @@ module GameTests =
     let [<Test>] ``card limits enforced within same round`` () =
         let buyProvince = "buyer", [], [Always, Victory Province]
         {protoGame with cards   = Map.ofList [Victory Province, 1]
-                        players = List.replicate 2 {initialPlayer with hand = List.replicate 5 (Coin Gold)
-                                                                       bot  = buyProvince}}
+                        players = List.replicate 2 {GameState.initialPlayer () with hand = List.replicate 5 (Coin Gold)
+                                                                                    bot  = buyProvince}}
         |> Dominion.Game.round
         |> GameState.getPlayers
         |> List.map Utils.allCards
@@ -1207,14 +1207,14 @@ module GameTests =
 
     module ScorePlayerTests =
         let [<Test>] ``simple score`` () = Dominion.Game.score 
-                                            {Constants.initialPlayer with hand=[Victory Estate];
+                                            {GameState.initialPlayer () with hand=[Victory Estate];
                                                                             discard=[Victory Duchy; Coin Copper];
                                                                             deck=[Victory Province; Action Smithy]}
                                             |> should equal
                                                 (List.sumBy Constants.victoryPointsFor [Victory Estate; Victory Duchy; Victory Province])
 
         let [<Test>] ``curse score`` () = Dominion.Game.score 
-                                            {Constants.initialPlayer with hand=[Victory Estate; Victory Curse];
+                                            {GameState.initialPlayer () with hand=[Victory Estate; Victory Curse];
                                                                             discard=[Victory Duchy; Coin Copper];
                                                                             deck=[Victory Province; Action Smithy]}
                                             |> should equal
@@ -1222,7 +1222,7 @@ module GameTests =
                                                 [Victory Estate; Victory Duchy; Victory Curse; Victory Province])
 
         let [<Test>] ``gardens score`` () = Dominion.Game.score 
-                                                {Constants.initialPlayer with hand=[]; discard=[Victory Gardens]; 
+                                                {GameState.initialPlayer () with hand=[]; discard=[Victory Gardens]; 
                                                                               deck=List.replicate 43 (Coin Copper)}
                                             |> should equal 4
 

@@ -15,11 +15,12 @@ let withNth items index item =
 let countOccurences list item = List.filter ((=) item) list |> List.length
 let countOccurs item list = countOccurences list item
 
+(* It's necessary to construct a single rand instance and reuse it.
+   http://stackoverflow.com/questions/11975161/f-system-random-next-returning-the-same-result *)
+let rand = System.Random()
+
 (* Returns a list with the same elements as the original but in randomized order *)
 let shuffle items = 
-    (* It's necessary to construct a single rand instance and reuse it.
-       http://stackoverflow.com/questions/11975161/f-system-random-next-returning-the-same-result *)
-    let rand = System.Random()
     items
     |> List.map (fun x -> (x, rand.Next()))
     |> List.sortBy snd

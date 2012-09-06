@@ -6,6 +6,13 @@ open Constants
 (* This would be defined in Constants if not for mutual recursion issues *)
 let initialTurn = {actions = 1; buys = 1; purchasingPower = 0}  
 
+(* This needs to be a function and not just a value so `shuffle` is called multiple times. *)
+let initialPlayer () = {hand = []
+                        discard = []
+                        deck = List.replicate 7 (Coin Copper) @ List.replicate 3 (Victory Estate) |> Utils.shuffle
+                        bot = "Pass", [], []
+                        militiaReaction = fun _ -> (None, None, None)}
+
 let initialGameState = {players = []; cards = Map.empty; trash = []; currentTurn = initialTurn; roundsPlayed = 0; log = [] }
 
 (* Resets the card counts to the initial amount of each card in `cards`. *)
