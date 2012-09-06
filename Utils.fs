@@ -47,6 +47,8 @@ let rec withoutFirst pred = function
     | hd::tl -> hd::(withoutFirst pred tl)
     | [] -> []
 
+let drop item = withoutFirst ((=) item)
+
 let contains item list =
     match List.tryFind ((=) item) list with
         | Some _ -> true

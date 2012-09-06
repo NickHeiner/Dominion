@@ -43,7 +43,7 @@ let mineSmithy2 =
 
 
 
-let hugeBitchCellar = "HUGE BITCH Cellar",
+let hugeBitchCellar = "Huge Bitch Cellar",
                       [Always, AVillage
                        cellarVictories
                        Always, AThroneRoom AWitch
@@ -56,7 +56,7 @@ let hugeBitchCellar = "HUGE BITCH Cellar",
                                 CountInCardsLessThan (1, Action Cellar), Action Cellar]
 
 
-let hugeBitch = "HUGE BITCH",
+let hugeBitch = "Huge bitch",
                 [Always, AVillage
                  Always, AThroneRoom AWitch
                  Always, AWitch],
@@ -67,12 +67,12 @@ let hugeBitch = "HUGE BITCH",
                           Always, Coin Silver; (* but sometimes we want a village, too *)
                          ]
 
-let cash = "Ca$hMonay",
+let cash = "Cas$ha",
            [],
            standard [Always, Coin Gold
                      Always, Coin Silver]
                      
-let gardens = "Gardens up in this bitch",
+let gardens = "Gardens up in this biatch",
               [Always, AVillage
                cellarVictories
                Always, AFestival

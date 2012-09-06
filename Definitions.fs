@@ -93,7 +93,7 @@ type buy = (cond * card) list
 type bot = string * act * buy (* string = name *)
 
 [<CustomEquality; NoComparisonAttribute>]
-(* Why are hand and discard lists and not sets? *)
+(* Hand and discard lists are not sets because duplicates are permitted. *)
 type player = {hand : card list; deck : card list; discard : card list; bot : bot;
                 militiaReaction : card list -> (card option * card option * card option)}
     
@@ -105,7 +105,7 @@ type player = {hand : card list; deck : card list; discard : card list; bot : bo
                 override x.GetHashCode() = hash (x.hand, x.deck, x.discard, x.bot)
 
 type botEvent = Act of argActCard | Buy of card
-type logEvent = {pId: pId; event: botEvent}
+type logEvent = {pId: pId; event: botEvent; currHand: card list}
 
 (* each round = every player taking a turn *)
 type gameState = {players : player list; cards : Map<card, int>; trash : card list; currentTurn : turn; roundsPlayed : int; log: logEvent list}

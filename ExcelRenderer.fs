@@ -186,10 +186,11 @@
         >> List.mapi (fun rowIndex (gameId, logEntry) -> 
                         let row = Row rowIndex
                         let eventName, eventArg = unpackEvent logEntry.event
-                        [(row, Col 0), Utils.toString gameId;
-                            (row, Col 1), Map.find logEntry.pId nameLookup;
-                            (row, Col 2), eventName;
-                            (row, Col 3), eventArg])
+                        [(row, Col 0), Utils.toString gameId
+                         (row, Col 1), Map.find logEntry.pId nameLookup
+                         (row, Col 2), eventName
+                         (row, Col 3), eventArg
+                         (row, Col 4), logEntry.currHand |> List.map (sprintf "%A") |> String.concat ", "])
         >> Seq.concat
         >> Map.ofSeq
 
@@ -200,7 +201,8 @@
         render worksheet (Row 0) (Col 0) <| Map.ofList [(Row 0, Col 0), "Game Id";
                                                         (Row 0, Col 1), "Player";
                                                         (Row 0, Col 2), "Event";
-                                                        (Row 0, Col 3), "Arg";]
+                                                        (Row 0, Col 3), "Arg";
+                                                        (Row 0, Col 4), "Hand";]
         
         let nameLookup =
             match games with

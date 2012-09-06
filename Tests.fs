@@ -1047,23 +1047,26 @@ module ExcelRendererTests =
                                               (PId 5, "Loon")])
         
                                 (* Log is built up in reversed order for each game *)
-                                [[{pId = PId 1; event = Act <| AMine Silver}
-                                  {pId = PId 0; event = Buy <| Action Smithy}]
+                                [[{pId = PId 1; event = Act <| AMine Silver; currHand = []}
+                                  {pId = PId 0; event = Buy <| Action Smithy; currHand = [Action Smithy; Coin Gold]}]
 
-                                 [{pId = PId 5; event = Buy <| Victory Gardens}]]
+                                 [{pId = PId 5; event = Buy <| Victory Gardens; currHand = [Victory Estate; Victory Estate]}]]
 
         actual |> should equal (Map.ofList [(Row 0, Col 0), "0"
                                             (Row 0, Col 1), "Gulliver"
                                             (Row 0, Col 2), "Buy"
                                             (Row 0, Col 3), "Action Smithy"
+                                            (Row 0, Col 4), "Action Smithy, Coin Gold"
                                             (Row 1, Col 0), "0"
                                             (Row 1, Col 1), "Samson"
                                             (Row 1, Col 2), "Act"
                                             (Row 1, Col 3), "AMine Silver"
+                                            (Row 1, Col 4), ""
                                             (Row 2, Col 0), "1"
                                             (Row 2, Col 1), "Loon"
                                             (Row 2, Col 2), "Buy"
-                                            (Row 2, Col 3), "Victory Gardens"])
+                                            (Row 2, Col 3), "Victory Gardens"
+                                            (Row 2, Col 4), "Victory Estate, Victory Estate"])
 
 module GameTests =
     let [<Test>] ``card limits enforced within same round`` () =
@@ -1106,10 +1109,15 @@ module GameTests =
                           Always, ASmithy;
                           Always, AMine Silver], [Always, toBuy0;
                                                   Always, toBuy1]
+        
+        (* TODO Having to sort all the lists in this test is a pain. There's probably a better way to do this. *)
+        let initialHand = List.sort [Action Festival; Action Smithy; Action Mine]
+        let deck = List.sort [Coin Gold; Coin Gold; Coin Silver]
+        
         let afterTurn = protoGame
                         |> GameState.withCards [toBuy0; toBuy1]
-                        |> GameState.updatePlayer pId (fun player -> {player with hand = [Action Festival; Action Smithy; Action Mine];
-                                                                                  deck = [Coin Gold; Coin Gold; Coin Silver]})
+                        |> GameState.updatePlayer pId (fun player -> {player with hand = initialHand
+                                                                                  deck = deck})
                         |> Dominion.Game.applyTurn bot pId
         
         let afterTurnPlayerCards =
@@ -1121,13 +1129,20 @@ module GameTests =
         afterTurnPlayerCards |> should contain toBuy0
         afterTurnPlayerCards |> should contain toBuy1
 
+        let handAfterMine = (Coin Gold)::(Utils.drop (Coin Silver) deck) |> List.sort
+
         afterTurn.log
+        |> List.map (fun logEntry -> {logEntry with currHand = List.sort logEntry.currHand})
         |> List.rev
-        |> should equal [{pId = pId; event = Act AFestival};
-                         {pId = pId; event = Act ASmithy};
-                         {pId = pId; event = Act <| AMine Silver};
-                         {pId = pId; event = Buy toBuy0};
-                         {pId = pId; event = Buy toBuy1}]
+        |> should equal [{pId = pId; event = Act AFestival; currHand = initialHand}
+                         {pId = pId; event = Act ASmithy; currHand = initialHand
+                                                                     |> Utils.drop (Action Festival)};
+                         {pId = pId; event = Act <| AMine Silver; currHand = (initialHand @ deck)
+                                                                             |> Utils.drop (Action Festival)
+                                                                             |> Utils.drop (Action Smithy)
+                                                                             |> List.sort}
+                         {pId = pId; event = Buy toBuy0; currHand = handAfterMine}
+                         {pId = pId; event = Buy toBuy1; currHand = handAfterMine}]
 
     let [<Test>] ``get initial bots`` () =
         let bot = "Foo", [], []
