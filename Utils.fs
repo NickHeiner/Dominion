@@ -49,6 +49,8 @@ let rec withoutFirst pred = function
 
 let drop item = withoutFirst ((=) item)
 
+let equalWithoutLog game game' = {game with log = []} = {game' with log = []}
+
 let contains item list =
     match List.tryFind ((=) item) list with
         | Some _ -> true

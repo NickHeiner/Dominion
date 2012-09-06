@@ -15,12 +15,12 @@ module Game =
 
   let rec applyUpdate apply pId bot gameState =
     let afterUpdate = apply pId bot gameState
-    if afterUpdate = gameState then gameState else applyUpdate apply pId bot afterUpdate
+    if Utils.equalWithoutLog afterUpdate gameState then afterUpdate else applyUpdate apply pId bot afterUpdate
 
   let applyTurn bot pId gameState =
     let _, acts, buys = bot
     applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction pId acts gameState
-                    |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy pId buys
+    |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy pId buys
 
   let rec round (gameState : gameState) = 
     (* TODO why do we need `players` as a separate var? Why not just gameState.players? *)

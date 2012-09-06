@@ -179,6 +179,8 @@
     let unpackEvent = function
         | Act card -> "Act", Utils.toString card
         | Buy card -> "Buy", Utils.toString card
+        | PassAct -> "Pass", "Act"
+        | PassBuy -> "Pass", "Buy"
     
     let getLogCells nameLookup =
         List.mapi (fun gameId -> List.map (fun entry -> gameId, entry) >> List.rev)
@@ -186,11 +188,16 @@
         >> List.mapi (fun rowIndex (gameId, logEntry) -> 
                         let row = Row rowIndex
                         let eventName, eventArg = unpackEvent logEntry.event
-                        [(row, Col 0), Utils.toString gameId
-                         (row, Col 1), Map.find logEntry.pId nameLookup
-                         (row, Col 2), eventName
-                         (row, Col 3), eventArg
-                         (row, Col 4), logEntry.currHand |> List.map (sprintf "%A") |> String.concat ", "])
+                        [Utils.toString gameId
+                         Utils.toString logEntry.round
+                         Map.find logEntry.pId nameLookup
+                         eventName
+                         eventArg
+                         logEntry.currHand |> List.map Utils.toString |> String.concat ", "
+                         Utils.toString logEntry.turn.actions
+                         Utils.toString logEntry.turn.buys
+                         Utils.toString logEntry.turn.purchasingPower]
+                        |> List.mapi (fun index contents -> (row, Col index), contents))
         >> Seq.concat
         >> Map.ofSeq
 
@@ -198,12 +205,19 @@
         let worksheet = workbook.Worksheets.Add () :?> Worksheet
         worksheet.Name <- "Log"
 
-        render worksheet (Row 0) (Col 0) <| Map.ofList [(Row 0, Col 0), "Game Id";
-                                                        (Row 0, Col 1), "Player";
-                                                        (Row 0, Col 2), "Event";
-                                                        (Row 0, Col 3), "Arg";
-                                                        (Row 0, Col 4), "Hand";]
-        
+        ["Game Id"
+         "Round Id"
+         "Player"
+         "Event"
+         "Arg"
+         "Hand"
+         "Actions"
+         "Buys"
+         "Purchasing Power"]
+         |> List.mapi (fun index header -> (Row 0, Col index), header)
+         |> Map.ofList
+         |> render worksheet (Row 0) (Col 0)
+       
         let nameLookup =
             match games with
             |   hd::_ -> hd.players

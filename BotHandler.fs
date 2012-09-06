@@ -51,7 +51,8 @@
                                      let cost = cardCost card 
                                      let withPlayer = GameState.addCards 1 pId card gameState
                                      GameState.withTurn {withPlayer.currentTurn
-                                                            with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card}
+                                                            with purchasingPower = withPlayer.currentTurn.purchasingPower - cardCost card
+                                                                 buys = withPlayer.currentTurn.buys - 1}
                                                         withPlayer
 
         (* TODO Why do all these take acts or buys if they're already getting pId and gameState? It's redundant. *)
@@ -67,15 +68,20 @@
                     | Some (_, card) -> Some card
                     | None -> None
         
+        let withLogEntry pId gameState preGameState event = {gameState with log = {pId = pId
+                                                                                   event = event
+                                                                                   round = gameState.roundsPlayed
+                                                                                   turn = preGameState.currentTurn
+                                                                                   currHand = GameState.getPlayer pId preGameState
+                                                                                              |> GameState.getHand}::gameState.log}
+
         let applyFirstValidBuy pId buys gameState =
             match findFirstValidBuy pId buys gameState with
-                | Some card -> {buy pId card gameState with log = {pId = pId; event = Buy card; currHand = GameState.getPlayer pId gameState
-                                                                                                           |> GameState.getHand}::gameState.log}
-                | None -> gameState
+                | Some card -> withLogEntry pId (buy pId card gameState) gameState <| Buy card
+                | None -> withLogEntry pId gameState gameState PassBuy 
 
         let applyFirstValidAction pId acts gameState =
             match findFirstValidAction pId acts gameState with
-                | Some card -> {act pId card gameState with log = {pId = pId; event = Act card; currHand = GameState.getPlayer pId gameState
-                                                                                                           |> GameState.getHand}::gameState.log}
-                | None -> gameState
+                | Some card -> withLogEntry pId (act pId card gameState) gameState <| Act card
+                | None -> withLogEntry pId gameState gameState PassAct 
 

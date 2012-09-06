@@ -667,9 +667,11 @@ module BotTests =
         |> GameState.getDiscard
 
     let [<Test>] ``pass bot does nothing`` () = 
-        BotHandler.GameStateUpdate.applyFirstValidBuy (PId 0) [] protoGame 
-        |> BotHandler.GameStateUpdate.applyFirstValidAction (PId 0) []
-        |> should equal protoGame
+        let pId = PId 0
+        BotHandler.GameStateUpdate.applyFirstValidBuy pId [] protoGame 
+        |> BotHandler.GameStateUpdate.applyFirstValidAction pId []
+        |> Utils.equalWithoutLog protoGame
+        |> should be True
 
     let [<Test>] ``legal buy`` () = 
         let toBuy = Victory Duchy
@@ -855,6 +857,11 @@ module BotTests =
                                                                 |> should equal
                                                                     ((GameState.totalPurchasingPower id (preGameState id toBuy))
                                                                         - Constants.cardCost toBuy)
+
+            let [<Test>] ``buy lowers current turn buys`` () =
+                (doBuy (PId 0) (Victory Curse)).currentTurn.buys
+                |> should equal (protoGame.currentTurn.buys - 1)
+                
     
 module UtilTests =
     let [<Test>] simpleWithNth () = Utils.withNth [5; 3; 2] 0 6 |> should equal [6; 3; 2]
@@ -1047,32 +1054,52 @@ module ExcelRendererTests =
                                               (PId 5, "Loon")])
         
                                 (* Log is built up in reversed order for each game *)
-                                [[{pId = PId 1; event = Act <| AMine Silver; currHand = []}
-                                  {pId = PId 0; event = Buy <| Action Smithy; currHand = [Action Smithy; Coin Gold]}]
+                                [[{pId = PId 1; event = Act <| AMine Silver; currHand = []; round = 3; turn = {actions = 3
+                                                                                                               buys = 10
+                                                                                                               purchasingPower = 0}}
+                                  {pId = PId 0; event = Buy <| Action Smithy; currHand = [Action Smithy; Coin Gold]; round = 3
+                                   turn = {actions = 6
+                                           buys = 9
+                                           purchasingPower = 1}}]
 
-                                 [{pId = PId 5; event = Buy <| Victory Gardens; currHand = [Victory Estate; Victory Estate]}]]
+                                 [{pId = PId 5; event = Buy <| Victory Gardens; currHand = [Victory Estate; Victory Estate]; round = 9
+                                   turn = {actions = 5
+                                           buys = 2
+                                           purchasingPower = 7}}]]
 
         actual |> should equal (Map.ofList [(Row 0, Col 0), "0"
-                                            (Row 0, Col 1), "Gulliver"
-                                            (Row 0, Col 2), "Buy"
-                                            (Row 0, Col 3), "Action Smithy"
-                                            (Row 0, Col 4), "Action Smithy, Coin Gold"
+                                            (Row 0, Col 1), "3"
+                                            (Row 0, Col 2), "Gulliver"
+                                            (Row 0, Col 3), "Buy"
+                                            (Row 0, Col 4), "Action Smithy"
+                                            (Row 0, Col 5), "Action Smithy, Coin Gold"
+                                            (Row 0, Col 6), "6"
+                                            (Row 0, Col 7), "9"
+                                            (Row 0, Col 8), "1"
                                             (Row 1, Col 0), "0"
-                                            (Row 1, Col 1), "Samson"
-                                            (Row 1, Col 2), "Act"
-                                            (Row 1, Col 3), "AMine Silver"
-                                            (Row 1, Col 4), ""
+                                            (Row 1, Col 1), "3"
+                                            (Row 1, Col 2), "Samson"
+                                            (Row 1, Col 3), "Act"
+                                            (Row 1, Col 4), "AMine Silver"
+                                            (Row 1, Col 5), ""
+                                            (Row 1, Col 6), "3"
+                                            (Row 1, Col 7), "10"
+                                            (Row 1, Col 8), "0"
                                             (Row 2, Col 0), "1"
-                                            (Row 2, Col 1), "Loon"
-                                            (Row 2, Col 2), "Buy"
-                                            (Row 2, Col 3), "Victory Gardens"
-                                            (Row 2, Col 4), "Victory Estate, Victory Estate"])
+                                            (Row 2, Col 1), "9"
+                                            (Row 2, Col 2), "Loon"
+                                            (Row 2, Col 3), "Buy"
+                                            (Row 2, Col 4), "Victory Gardens"
+                                            (Row 2, Col 5), "Victory Estate, Victory Estate"
+                                            (Row 2, Col 6), "5"
+                                            (Row 2, Col 7), "2"
+                                            (Row 2, Col 8), "7"])
 
 module GameTests =
     let [<Test>] ``card limits enforced within same round`` () =
         let buyProvince = "buyer", [], [Always, Victory Province]
-        {protoGame with cards   = Map.ofList [Victory Province, 1];
-                        players = List.replicate 2 {initialPlayer with hand = List.replicate 5 (Coin Gold);
+        {protoGame with cards   = Map.ofList [Victory Province, 1]
+                        players = List.replicate 2 {initialPlayer with hand = List.replicate 5 (Coin Gold)
                                                                        bot  = buyProvince}}
         |> Dominion.Game.round
         |> GameState.getPlayers
@@ -1090,9 +1117,9 @@ module GameTests =
                   [],
                   [Always, toBuy]
         {protoGame with cards = Map.ofList [Victory Duchy, supply]; currentTurn = {protoGame.currentTurn with buys = supply * 3}}
-        |> GameState.updatePlayer pId (fun player -> {player with bot = bot;
-                                                                  hand = List.replicate (supply * 5) <| Coin Gold;
-                                                                  deck=[];
+        |> GameState.updatePlayer pId (fun player -> {player with bot = bot
+                                                                  hand = List.replicate (supply * 5) <| Coin Gold
+                                                                  deck=[]
                                                                   discard=[]})
         |> Dominion.Game.applyTurn bot pId
         |> GameState.getPlayer pId
@@ -1130,19 +1157,41 @@ module GameTests =
         afterTurnPlayerCards |> should contain toBuy1
 
         let handAfterMine = (Coin Gold)::(Utils.drop (Coin Silver) deck) |> List.sort
+        let round = 0
 
         afterTurn.log
         |> List.map (fun logEntry -> {logEntry with currHand = List.sort logEntry.currHand})
         |> List.rev
-        |> should equal [{pId = pId; event = Act AFestival; currHand = initialHand}
+        |> should equal [{pId = pId; event = Act AFestival; currHand = initialHand; round = round; turn = {actions = 1
+                                                                                                           buys = 1
+                                                                                                           purchasingPower = 0}}
                          {pId = pId; event = Act ASmithy; currHand = initialHand
-                                                                     |> Utils.drop (Action Festival)};
+                                                                     |> Utils.drop (Action Festival);  round = round
+                          turn = {actions = 2
+                                  buys = 2
+                                  purchasingPower = FESTIVAL_PURCHASE_POWER}};
                          {pId = pId; event = Act <| AMine Silver; currHand = (initialHand @ deck)
                                                                              |> Utils.drop (Action Festival)
                                                                              |> Utils.drop (Action Smithy)
-                                                                             |> List.sort}
-                         {pId = pId; event = Buy toBuy0; currHand = handAfterMine}
-                         {pId = pId; event = Buy toBuy1; currHand = handAfterMine}]
+                                                                             |> List.sort;  round = round
+                          turn = {actions = 1
+                                  buys = 2
+                                  purchasingPower = FESTIVAL_PURCHASE_POWER}}
+                         {pId = pId; event = PassAct; currHand = handAfterMine; round = round; turn = {actions = 0
+                                                                                                       buys = 2
+                                                                                                       purchasingPower = FESTIVAL_PURCHASE_POWER}}
+                         {pId = pId; event = Buy toBuy0; currHand = handAfterMine; round = round;
+                          turn = {actions = 0
+                                  buys = 2
+                                  purchasingPower = FESTIVAL_PURCHASE_POWER}}
+                         {pId = pId; event = Buy toBuy1; currHand = handAfterMine; round = round;
+                          turn = {actions = 0
+                                  buys = 1
+                                  purchasingPower = FESTIVAL_PURCHASE_POWER - cardCost toBuy0}}
+                         {pId = pId; event = PassBuy; currHand = handAfterMine; round = round;
+                          turn = {actions = 0
+                                  buys = 0
+                                  purchasingPower = FESTIVAL_PURCHASE_POWER - cardCost toBuy0 - cardCost toBuy1}}]
 
     let [<Test>] ``get initial bots`` () =
         let bot = "Foo", [], []

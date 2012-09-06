@@ -104,8 +104,11 @@ type player = {hand : card list; deck : card list; discard : card list; bot : bo
                     
                 override x.GetHashCode() = hash (x.hand, x.deck, x.discard, x.bot)
 
-type botEvent = Act of argActCard | Buy of card
-type logEvent = {pId: pId; event: botEvent; currHand: card list}
+type botEvent = Act of argActCard | Buy of card | PassAct | PassBuy
+
+(* As I've added more fields to the log event, it's not obvious that I shouldn't just do away with it
+   and just save every progessive gameState at each step of the game. *)
+type logEvent = {pId: pId; event: botEvent; currHand: card list; round: int; turn: turn}
 
 (* each round = every player taking a turn *)
 type gameState = {players : player list; cards : Map<card, int>; trash : card list; currentTurn : turn; roundsPlayed : int; log: logEvent list}
