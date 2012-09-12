@@ -28,10 +28,6 @@ let shuffle items =
 
 let listMem list item = List.exists ((=) item) list
 
-(* TODO Is this really necessary? Could List.iteri be used instead? *)
-(* Or how about List.mapi? *)
-let withIndices items = Seq.zip (seq { 0 .. List.length items}) (items |> List.toSeq) |> Seq.toList
-
 let prettyPrintCardCounts cardCounts = cardCounts
                                           |> Map.toList
                                           |> List.map (fun (card, count) -> sprintf "\t%A\t%f" card count)

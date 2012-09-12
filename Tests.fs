@@ -27,8 +27,7 @@ module ActionTests =
                                                     else {player with hand=[victory]; deck=[Coin Copper]})
         |> GameStateUpdate.act aId ABureaucrat
         |> GameState.getPlayers
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> List.head player.deck |> should equal (if PId pId = aId then BUREAUCRAT_CARD_GAIN else victory))
+        |> List.iteri (fun pId player -> List.head player.deck |> should equal (if PId pId = aId then BUREAUCRAT_CARD_GAIN else victory))
 
     let bureaucratTest preHand =
         let aId = PId 1
@@ -38,8 +37,7 @@ module ActionTests =
                                                     else {player with hand=preHand; deck=[Coin Copper]})
         |> GameStateUpdate.act aId ABureaucrat
         |> GameState.getPlayers
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> if PId pId <> aId then player.hand |> memberEquals preHand)
+        |> List.iteri (fun pId player -> if PId pId <> aId then player.hand |> memberEquals preHand)
     
     let [<Test>] ``bureaucrat blocked by moat`` () = bureaucratTest [Victory Gardens; Action Moat]
     let [<Test>] ``bureaucrat defender no victory`` () = bureaucratTest [Coin Copper; Coin Silver]
@@ -156,8 +154,7 @@ module ActionTests =
         |> withActionCard aId Militia
         |> GameStateUpdate.act aId AMilitia
         |> GameState.getPlayers       
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> List.length player.hand |> should equal
+        |> List.iteri (fun pId player -> List.length player.hand |> should equal
                                            <| if PId pId = aId 
                                               then initialHandSize                    
                                               else MILITIA_DRAW_DOWN_COUNT)
@@ -301,12 +298,11 @@ module ActionTests =
                                                      else {player with deck = otherDeck; discard = []}))
         |> GameStateUpdate.act aId spy
         |> GameState.getPlayers
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> if PId pId = aId
-                                           then 
+        |> List.iteri (fun pId player -> if PId pId = aId
+                                         then 
                                                 player.hand |> should equal [List.head selfDeckPrefix]
                                                 player.deck |> should equal <| List.tail (selfDeckPrefix @ selfDeckSuffix)
-                                           else 
+                                         else 
                                                 player.deck |> should equal []
                                                 player.discard |> should equal otherDeck)
 
@@ -337,13 +333,12 @@ module ActionTests =
                                             (fun player -> {player with deck = []; discard = otherDiscard})) game) protoGame
         <| GameState.getIdRange protoGame) 
         |> GameStateUpdate.act aId spy).players
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> if PId pId = aId
-                                           then 
+        |> List.iteri (fun pId player -> if PId pId = aId
+                                         then 
                                                 player.hand |> should equal selfDeckPrefix
                                                 memberEquals player.discard <| (Action Spy)::selfDeckSuffix
                                                 player.deck |> should equal []
-                                           else 
+                                         else 
                                                 player.deck |> should equal []
                                                 player.discard |> should equal otherDiscard)
                                                 
@@ -360,13 +355,12 @@ module ActionTests =
                                             (fun player -> {player with deck = otherDeck; discard = []})) game) protoGame
         <| GameState.getIdRange protoGame) 
         |> GameStateUpdate.act aId spy).players
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> if PId pId = aId
-                                           then 
+        |> List.iteri (fun pId player -> if PId pId = aId
+                                         then 
                                                 player.hand |> should equal selfDeckPrefix
                                                 player.deck |> should equal selfDeckSuffix
                                                 player.discard |> should equal [Action Spy]
-                                           else 
+                                         else 
                                                 player.deck |> should equal otherDeck
                                                 player.discard |> should equal [])
     
@@ -382,11 +376,10 @@ module ActionTests =
             |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Thief]})
             |> GameStateUpdate.act aId (AThief <| ThiefChoice (priorities, shouldGain)))
         afterAction.players
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> if PId pId = aId 
-                                           then
+        |> List.iteri (fun pId player -> if PId pId = aId 
+                                         then
                                             player.discard |> memberEquals <| actorDeck 
-                                           else
+                                         else
                                             player.discard |> should equal targetDiscard;
                                             player.deck |> should equal targetDeck;
                                             player.hand |> should equal startHand)
@@ -415,11 +408,10 @@ module ActionTests =
             |> GameState.foldPlayers (fun pId player -> {player with deck = preDeck; hand = []; discard = []})
             |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Thief]})
             |> GameStateUpdate.act aId (AThief <| ThiefChoice (priorities, shouldGain))).players
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> if PId pId = aId
-                                           then
+        |> List.iteri (fun pId player -> if PId pId = aId
+                                         then
                                                 player.discard |> should equal [Action Thief]
-                                           else
+                                         else
                                                 player.discard |> memberEquals preDeckPrefix
                                                 player.deck |> memberEquals preDeckSuffix)
                                     
@@ -434,11 +426,10 @@ module ActionTests =
             |> GameState.foldPlayers (fun pId player -> {player with deck = []; hand = []; discard = [Coin Copper; Coin Gold]})
             |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Thief]; discard = []})
             |> GameStateUpdate.act aId (AThief <| ThiefChoice (priorities, shouldGain))).players
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> if PId pId = aId
-                                           then List.filter ((<>) (Action Thief)) player.discard
+        |> List.iteri (fun pId player -> if PId pId = aId
+                                         then List.filter ((<>) (Action Thief)) player.discard
                                                 |> memberEquals <| List.replicate (List.length protoGame.players - 1) (Coin Copper)
-                                           else player.discard |> should equal [Coin Gold])
+                                         else player.discard |> should equal [Coin Gold])
                                          
     (* TODO: thief: verify that "A player with just one card left reveals that last card and
              then shuffles to get the other card to reveal (without including the revealed card)" *)
@@ -475,13 +466,12 @@ module ActionTests =
         afterAction.currentTurn.buys |> should equal <| protoGame.currentTurn.buys + COUNCIL_ROOM_BUYS
         afterAction.players
         |> List.map (fun player -> player.hand)
-        |> Utils.withIndices
-        |> List.iter (fun (pId, newHand) -> if PId pId = actorId
-                                             then memberEquals newHand <| hand @ (deck
+        |> List.iteri (fun pId newHand -> if PId pId = actorId
+                                          then memberEquals newHand <| hand @ (deck
                                                                             |> List.toSeq
                                                                             |> Seq.take COUNCIL_ROOM_SELF_DRAW_COUNT
                                                                             |> Seq.toList)
-                                             else memberEquals newHand <| hand @ (deck
+                                          else memberEquals newHand <| hand @ (deck
                                                                             |> List.toSeq
                                                                             |> Seq.take COUNCIL_ROOM_OTHER_DRAW_COUNT
                                                                             |> Seq.toList))
@@ -542,10 +532,9 @@ module ActionTests =
         (protoGame
         |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Witch]; deck = deck})
         |> GameStateUpdate.act aId AWitch).players
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> if PId pId = aId
-                                            then player.hand |> should equal deck
-                                            else player.discard |> should contain (Victory Curse))
+        |> List.iteri (fun pId player -> if PId pId = aId
+                                         then player.hand |> should equal deck
+                                         else player.discard |> should contain (Victory Curse))
 
     let [<Test>] ``witch blocked by moat`` () =
         let aId = PId 0
@@ -555,11 +544,10 @@ module ActionTests =
         |> GameState.updatePlayer withMoat (fun player -> {player with hand = [Action Moat]})
         |> GameState.updatePlayer aId (fun player -> {player with hand = [Action Witch]; deck = deck})
         |> GameStateUpdate.act aId AWitch).players
-        |> Utils.withIndices
-        |> List.iter (fun (pId, player) -> match PId pId with
-                                            | x when x = aId ->      player.hand |> should equal deck
-                                            | x when x = withMoat -> player.discard |> should not' (contain (Victory Curse))
-                                            | _ ->                   player.discard |> should contain (Victory Curse))
+        |> List.iteri (fun pId player -> match PId pId with
+                                         | x when x = aId ->      player.hand |> should equal deck
+                                         | x when x = withMoat -> player.discard |> should not' (contain (Victory Curse))
+                                         | _ ->                   player.discard |> should contain (Victory Curse))
 
     let [<Test>] workshop () = 
         let aId = PId 1
