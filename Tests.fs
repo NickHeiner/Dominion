@@ -1104,9 +1104,9 @@ module GameTests =
         |> Dominion.Game.round
         |> GameState.getPlayers
         |> List.map Utils.allCards
-        |> Utils.flatten
-        |> List.filter (function Victory Province -> true | _ -> false)
-        |> List.length
+        |> Seq.concat
+        |> Seq.filter (function Victory Province -> true | _ -> false)
+        |> Seq.length
         |> should equal 1
 
     let [<Test>] ``card limits enforced within same turn`` () =

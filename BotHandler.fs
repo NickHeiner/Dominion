@@ -6,8 +6,8 @@
     let actionCardsRequired (bots : bot list) =
         bots
         |> List.map (fun (_, _, buys) -> List.map snd buys)
-        |> Utils.flatten
-        |> List.fold (fun acc -> function
+        |> Seq.concat
+        |> Seq.fold (fun acc -> function
                                     | Action a -> a::acc
                                     | _ -> acc) []
         |> Set.ofList

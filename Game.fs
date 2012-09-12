@@ -101,8 +101,7 @@ module Game =
                                   |> List.sortBy (fun stats -> stats.score)
                                   |> List.rev)
         |> List.map (List.mapi (fun index playerStats -> playerStats.name, index))
-        |> Utils.flatten
-        |> List.toSeq
+        |> Seq.concat
         |> Seq.groupBy fst
         |> Seq.map (fun (name, placements) -> name, Seq.countBy snd placements |> Map.ofSeq)
         |> Map.ofSeq

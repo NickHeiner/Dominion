@@ -95,9 +95,9 @@
         statsSeq
         |> Seq.map (fun stats -> Map.toList stats.cardCounts)
         |> Seq.toList
-        |> Utils.flatten
-        |> List.map fst
-        |> Set.ofList
+        |> Seq.concat
+        |> Seq.map fst
+        |> Set.ofSeq
         |> Set.toList
         |> List.mapi (fun index card -> (Row 0, Col index), sprintf "%A" card)
         |> Map.ofList
@@ -150,7 +150,7 @@
         |> Map.ofSeq
 
     let addBotData (workbook : Workbook) =
-        Utils.flatten
+        Seq.concat
         >> Seq.groupBy (fun playerStats -> playerStats.name)
         >> Seq.iter (fun (name, stats) ->
             let dataRowCount = Seq.length stats 
@@ -184,8 +184,8 @@
     
     let getLogCells nameLookup =
         List.mapi (fun gameId -> List.map (fun entry -> gameId, entry) >> List.rev)
-        >> Utils.flatten
-        >> List.mapi (fun rowIndex (gameId, logEntry) -> 
+        >> Seq.concat
+        >> Seq.mapi (fun rowIndex (gameId, logEntry) -> 
                         let row = Row rowIndex
                         let eventName, eventArg = unpackEvent logEntry.event
                         [Utils.toString gameId
