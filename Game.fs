@@ -17,24 +17,15 @@ module Game =
     let afterUpdate = apply pId gameState
     if Utils.equalWithoutLog afterUpdate gameState then afterUpdate else applyUpdate apply pId afterUpdate
 
-  let applyTurn pId gameState =
+  let applyTurn gameState pId =
+    if gameOver gameState then gameState else 
     applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction pId gameState
     |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy pId 
+  let applyTurn' pId gameState = applyTurn gameState pId
 
-  let rec round (gameState : gameState) = 
-    (* TODO why do we need `players` as a separate var? Why not just gameState.players? *)
-    let rec turn players gameState ((PId index) as pId) =
-      if gameOver gameState then gameState else
-        match players with
-          | [] -> gameState
-          | hd::tl -> let afterTurn = 
-                        applyTurn pId gameState
-                        |> GameState.updatePlayer pId (fun player -> GameState.discardAll player |> GameState.draw 5)
-                        |> GameState.nextTurn
-                      turn tl afterTurn <| PId (index + 1)
-    let afterRound = turn gameState.players gameState <| PId 0
-    let afterRound = {afterRound with roundsPlayed = afterRound.roundsPlayed + 1}
-    if gameOver afterRound then afterRound else round afterRound
+  let rec round initGame =
+    if gameOver initGame then initGame else
+    round {GameState.foldByPlayers applyTurn initGame with roundsPlayed = initGame.roundsPlayed + 1}
 
   let getInitialState (bots : bot list) =
     let actionCardsRequired = bots

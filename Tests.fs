@@ -1131,12 +1131,13 @@ module GameTests =
         let bot = "buyer",
                   [],
                   [Always, toBuy]
-        {protoGame with cards = Map.ofList [Victory Duchy, supply]; currentTurn = {protoGame.currentTurn with buys = supply * 3}}
+        {protoGame with cards = Map.ofList [Victory Duchy, supply; Victory Province, 10]
+                        currentTurn = {protoGame.currentTurn with buys = supply * 3}}
         |> GameState.updatePlayer pId (fun player -> {player with bot = bot
                                                                   hand = List.replicate (supply * 5) <| Coin Gold
                                                                   deck=[]
                                                                   discard=[]})
-        |> Dominion.Game.applyTurn pId
+        |> Dominion.Game.applyTurn' pId
         |> GameState.getPlayer pId
         |> Utils.allCards
         |> List.filter ((=) toBuy)
@@ -1161,7 +1162,7 @@ module GameTests =
                         |> GameState.updatePlayer pId (fun player -> {player with hand = initialHand
                                                                                   deck = deck
                                                                                   bot = bot})
-                        |> Dominion.Game.applyTurn pId
+                        |> Dominion.Game.applyTurn' pId
         
         let afterTurnPlayerCards =
             afterTurn
@@ -1213,7 +1214,7 @@ module GameTests =
         let bot = "Foo", [], []
         (Dominion.Game.getInitialState [bot]).players |> List.length |> should equal 1
 
-    let [<Test>] ``playGame doesn't crash`` () = Dominion.Game.playGame () |> Dominion.Game.gameOver |> should be True
+    let [<Test>] ``playGame doesn't crash and ends`` () = Dominion.Game.playGame () |> Dominion.Game.gameOver |> should be True
 
     let [<Test>] ``game ends at round limit`` () =
         protoGame

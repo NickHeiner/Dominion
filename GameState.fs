@@ -97,7 +97,7 @@ let addCards = _addCardsForPlayer (fun amountToAdd card player -> {player with d
 let addCardToDeck = _addCardsForPlayer (fun amountToAdd card player -> {player with deck = (List.replicate amountToAdd card)@player.deck}) 1
 let gainCard = addCards 1
 
-let foldByPlayers (f : gameState -> pId -> gameState) gameState = Seq.fold f gameState <| getIdRange gameState
+let foldByPlayers f gameState = Seq.fold f gameState <| getIdRange gameState
 let foldPlayers f gameState = Seq.fold (fun game pId -> updatePlayer pId (f pId) game) gameState <| getIdRange gameState
 
 let getActs pId gameState = (getPlayer pId gameState).bot |> Utils.mid
