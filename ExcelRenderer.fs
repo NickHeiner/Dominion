@@ -122,7 +122,7 @@
         stats
         |> Seq.mapi
             (fun gameIndex gameResults ->
-                Seq.mapi (fun cardIndex card -> (Row gameIndex, Col cardIndex), Utils.defaultFind card 0. gameResults.cardCounts) allCardsList)
+                Seq.mapi (fun cardIndex card -> (Row gameIndex, Col cardIndex), Utils.defaultFind card 0 gameResults.cardCounts) allCardsList)
         |> Seq.concat
         |> Map.ofSeq
 

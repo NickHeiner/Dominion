@@ -76,12 +76,12 @@ module Game =
     |> Utils.allCards 
     |> Seq.ofList
     |> Seq.countBy (fun x -> x)
-    |> Seq.map (fun (card, count) -> card, float count)
+    |> Seq.map (fun (card, count) -> card, count)
     |> Map.ofSeq
 
   let gameToPlayerStats bots game =
     List.map (fun player -> let name, _, _ = player.bot
-                            {name = name; score = float <| score player; cardCounts = cardCountsOfPlayer player}) game.players
+                            {name = name; score = score player; cardCounts = cardCountsOfPlayer player}) game.players
     |> List.sortBy (fun stats -> stats.score)
     |> List.rev
 

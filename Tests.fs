@@ -979,15 +979,15 @@ module ExcelRendererTests =
         actual |> should equal expected        
 
     (* TODO These tests could be DRY-er. *)
-    let statSeq = [{name= "Gulliver"; score= 32.; cardCounts= Map.ofList [Victory Estate, 10.; Action Adventurer, 54.]}
-                   {name= "Gulliver"; score= 28.; cardCounts= Map.ofList [Victory Curse, 15.; Coin Gold, 8.]}]
+    let statSeq = [{name= "Gulliver"; score= 32; cardCounts= Map.ofList [Victory Estate, 10; Action Adventurer, 54]}
+                   {name= "Gulliver"; score= 28; cardCounts= Map.ofList [Victory Curse, 15; Coin Gold, 8]}]
 
     let [<Test>] testCardNamesOf () = 
         let actual = cardNamesOf statSeq
-        let expected = Map.ofList [(Row 0, Col 3), sprintf "%A" <| Action Adventurer; 
-                                   (Row 0, Col 2), sprintf "%A" <| Coin Gold; 
-                                   (Row 0, Col 1), sprintf "%A" <| Victory Curse;
-                                   (Row 0, Col 0), sprintf "%A" <| Victory Estate;]
+        let expected = Map.ofList [(Row 0, Col 3), sprintf "%A" <| Action Adventurer
+                                   (Row 0, Col 2), sprintf "%A" <| Coin Gold
+                                   (Row 0, Col 1), sprintf "%A" <| Victory Curse
+                                   (Row 0, Col 0), sprintf "%A" <| Victory Estate]
         actual |> should equal expected
 
     let [<Test>] testGameLabels () =
@@ -995,13 +995,13 @@ module ExcelRendererTests =
 
     let [<Test>] testCardCounts () =
         let actual = cardCountsOf statSeq
-        let expected = Map.ofList [(Row 0, Col 0), 10.; (Row 0, Col 1), 0.; (Row 0, Col 2), 0.; (Row 0, Col 3), 54.
-                                   (Row 1, Col 0), 0.; (Row 1, Col 1), 15.; (Row 1, Col 2), 8.; (Row 1, Col 3), 0.]
+        let expected = Map.ofList [(Row 0, Col 0), 10; (Row 0, Col 1), 0;  (Row 0, Col 2), 0; (Row 0, Col 3), 54
+                                   (Row 1, Col 0), 0;  (Row 1, Col 1), 15; (Row 1, Col 2), 8; (Row 1, Col 3), 0]
         actual |> should equal expected
 
     let [<Test>] testScoresOf () =
         let actual = scoresOf statSeq
-        let expected = Map.ofList [(Row 0, Col 0), 32.; (Row 1, Col 0), 28.]
+        let expected = Map.ofList [(Row 0, Col 0), 32; (Row 1, Col 0), 28]
         actual |> should equal expected
 
     let statsOutput = ["Marmalade", "marma"; "Baboons", "bnbs"; "Gin", "bucket"]
@@ -1023,8 +1023,8 @@ module ExcelRendererTests =
         actual |> should equal expected
 
     let [<Test>] ``allCards dups`` () =
-        [{name= "Gulliver"; score= 32.; cardCounts= Map.ofList [Victory Estate, 10.; Action Adventurer, 54.]}
-         {name= "Gulliver"; score= 28.; cardCounts= Map.ofList [Victory Estate, 15.; Coin Gold, 8.]}]
+        [{name= "Gulliver"; score= 32; cardCounts= Map.ofList [Victory Estate, 10; Action Adventurer, 54]}
+         {name= "Gulliver"; score= 28; cardCounts= Map.ofList [Victory Estate, 15; Coin Gold, 8]}]
         |> allCards
         |> List.length
         |> should equal 3
