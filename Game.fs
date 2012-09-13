@@ -54,26 +54,28 @@ module Game =
     Bot.bots |> getInitialState |> round 
 
   let playGames () =
-    (* Maybe we should validate the game (ie check count of action cards required) before launching the threads *)
+    (* TODO Maybe we should validate the game (ie check count of action cards required) before launching the threads *)
     Async.Parallel [ for i in 0..GAMES_TO_PLAY - 1 -> async { let result = playGame ()
                                                               printf "."
                                                               return result } ]
     |> Async.RunSynchronously
     |> Array.toList
 
-  let cardCountsOfPlayer player = 
-    player
-    |> Utils.allCards 
-    |> Seq.ofList
-    |> Seq.countBy (fun x -> x)
-    |> Seq.map (fun (card, count) -> card, count)
-    |> Map.ofSeq
+  let cardCountsOfPlayer = 
+    Utils.allCards 
+    >> Seq.ofList
+    >> Seq.countBy (fun x -> x)
+    >> Seq.map (fun (card, count) -> card, count)
+    >> Map.ofSeq
 
-  let gameToPlayerStats bots game =
-    List.map (fun player -> let name, _, _ = player.bot
-                            {name = name; score = score player; cardCounts = cardCountsOfPlayer player}) game.players
-    |> List.sortBy (fun stats -> stats.score)
-    |> List.rev
+  let gameToPlayerStats bots =
+    GameState.getPlayers
+    >> List.map (fun player -> let name, _, _ = player.bot
+                               {name = name
+                                score = score player
+                                cardCounts = cardCountsOfPlayer player})
+    >> List.sortBy (fun stats -> stats.score)
+    >> List.rev
 
   let main _ = 
      printfn "Dominion!"
