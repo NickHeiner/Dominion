@@ -14,6 +14,8 @@ let memberEquals items1 items2 = List.sort items1 |> should equal <| List.sort i
 let withCard pId card = GameState.updatePlayer pId (fun player -> {player with hand = card::player.hand})
 let withActionCard pId card = withCard pId (Action card)
 
+let verifyOneLessCard pre post card = Utils.defaultFind card 0 post.cards |> should equal (Map.find card pre.cards - 1)
+
 module ActionTests =
     let useAction pId card = protoGame |> withActionCard pId (Definitions.getRaw card) |> GameStateUpdate.act pId card
     let countCards pId game card = Utils.countOccurences (GameState.getPlayer pId game |> GameState.getHand) card
@@ -21,11 +23,13 @@ module ActionTests =
     let [<Test>] bureaucrat () = 
         let aId = PId 1
         let victory = Victory Province
-        protoGame
-        |> GameState.foldPlayers (fun pId player -> if pId = aId
-                                                    then {player with hand=[Action Bureaucrat]; deck=[Victory Gardens]}
-                                                    else {player with hand=[victory]; deck=[Coin Copper]})
-        |> GameStateUpdate.act aId ABureaucrat
+        let afterAction = protoGame
+                          |> GameState.foldPlayers (fun pId player -> if pId = aId
+                                                                        then {player with hand=[Action Bureaucrat]; deck=[Victory Gardens]}
+                                                                        else {player with hand=[victory]; deck=[Coin Copper]})
+                          |> GameStateUpdate.act aId ABureaucrat
+        verifyOneLessCard protoGame afterAction <| Coin Silver
+        afterAction
         |> GameState.getPlayers
         |> List.iteri (fun pId player -> List.head player.deck |> should equal (if PId pId = aId then BUREAUCRAT_CARD_GAIN else victory))
 
@@ -134,7 +138,9 @@ module ActionTests =
     let [<Test>] feast () = let aId = PId 0
                             let toGain = Victory Duchy
                             let feast = AFeast toGain
-                            let player = useAction aId feast |> GameState.getPlayer aId
+                            let afterAction = useAction aId feast
+                            verifyOneLessCard protoGame afterAction toGain
+                            let player = GameState.getPlayer aId afterAction
                             player.discard |> should contain toGain
                             Utils.allCards player |> should not' (contain feast)
                             
@@ -244,9 +250,11 @@ module ActionTests =
                               let toGain = Action Militia
                               let remodel = ARemodel (toRemodel, toGain)
                               let initialToRemodelCount = countCards id protoGame toRemodel + 1
-                              let afterAction = protoGame
-                                                  |> withCard id toRemodel
-                                                  |> GameStateUpdate.act id remodel
+                              let withMilitia = {protoGame with cards = Map.add toGain 1 protoGame.cards}
+                              let afterAction = withMilitia
+                                                |> withCard id toRemodel
+                                                |> GameStateUpdate.act id remodel
+                              verifyOneLessCard withMilitia afterAction toGain
                               countCards id afterAction toRemodel |> should equal (initialToRemodelCount - 1)
                               (GameState.getPlayer id afterAction).discard |> should contain toGain
                               

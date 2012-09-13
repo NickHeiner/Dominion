@@ -81,10 +81,7 @@ let discardCardsFromDeck cards pId initGame = List.fold (fun game card -> discar
 let trash = removeCard (fun _ discard -> discard) setHand getHand Yes
 let trashFromDeck = removeCard (fun _ discard -> discard) (fun player deck -> {player with deck = deck}) (fun player -> player.deck) Yes
 
-(* TODO does this remove from the supply? *)
-let gainCard card id = updatePlayer id (fun player -> {player with discard = card::player.discard})
-
-let getIdRange gameState = { 0 .. List.length gameState.players - 1} |> Seq.map PId
+let getIdRange gameState = Seq.map PId { 0 .. List.length gameState.players - 1} 
 
 let _addCardsForPlayer transformPlayer count pId card game = 
     if not <| Map.containsKey card game.cards
@@ -97,10 +94,10 @@ let _addCardsForPlayer transformPlayer count pId card game =
         |> updatePlayer pId (transformPlayer amountToAdd card)
 
 let addCards = _addCardsForPlayer (fun amountToAdd card player -> {player with discard = (List.replicate amountToAdd card)@player.discard})
-let addCardToDeck = _addCardsForPlayer
-                        (fun amountToAdd card player -> if amountToAdd = 0 then player else {player with deck = card::player.deck})
-                        1
+let addCardToDeck = _addCardsForPlayer (fun amountToAdd card player -> {player with deck = (List.replicate amountToAdd card)@player.deck}) 1
+let gainCard = addCards 1
 
+let foldByPlayers (f : gameState -> pId -> gameState) gameState = Seq.fold f gameState <| getIdRange gameState
 let foldPlayers f gameState = Seq.fold (fun game pId -> updatePlayer pId (f pId) game) gameState <| getIdRange gameState
 
 let deckLen pId gameState = getPlayer pId gameState

@@ -61,7 +61,7 @@ let rec actionOfCard card aId gameState =
   
   | AFeast toGain as feast -> gameState
                                 |> GameState.trash (Action Feast) aId
-                                |> GameState.gainCard toGain aId
+                                |> GameState.gainCard aId toGain 
 
   | AMilitia -> GameState.getIdRange gameState
                                     |> Seq.filter (fun pId -> pId <> aId && not <| GameState.hasMoat pId gameState)
@@ -80,7 +80,7 @@ let rec actionOfCard card aId gameState =
   
   | ARemodel (toRemodel, toGain) ->
             GameState.trash toRemodel aId gameState
-            |> GameState.gainCard toGain aId
+            |> GameState.gainCard aId toGain 
                 
   | AThroneRoom act -> (* TODO if act itself is a ThroneRoom, you're not allowed to play one card 4 times. *)
                         let action = (actionOfCard act) aId
@@ -213,20 +213,18 @@ let rec actionOfCard card aId gameState =
     | AWorkshop toGain -> GameState.addCards 1 aId toGain gameState
     
     | ABureaucrat ->
-            GameState.foldPlayers
-                (fun pId player -> match pId with
-                                   | _id when _id = aId ->
-                                        (* It's a little frightening to use gameState, since we're folding over it and changing it each time.
-                                            However, each step of the fold should only update the player for that step, so there shouldn't
-                                            be any problems going back to an earlier step to grab this player. *)
-                                            gameState
-                                            |> GameState.addCardToDeck aId BUREAUCRAT_CARD_GAIN
-                                            |> GameState.getPlayer aId
-                                   | _id when GameState.hasMoat _id gameState -> player
-                                   | _ -> match List.tryFind (function Victory _ -> true | _ -> false) player.hand with
-                                                            |   None -> player
-                                                            |   Some victory -> {player with hand = Utils.withoutFirst ((=) victory) player.hand;
-                                                                                            deck = victory::player.deck})
+            GameState.foldByPlayers
+                (fun game pId -> match pId with
+                                           | _id when _id = aId ->
+                                                    game
+                                                    |> GameState.addCardToDeck aId BUREAUCRAT_CARD_GAIN
+                                           | _id when GameState.hasMoat _id game -> game
+                                           | _ -> GameState.updatePlayer pId
+                                                    (fun player -> 
+                                                        match List.tryFind (function Victory _ -> true | _ -> false) player.hand with
+                                                        |   None -> player
+                                                        |   Some victory -> {player with hand = Utils.withoutFirst ((=) victory) player.hand;
+                                                                                                    deck = victory::player.deck}) game)
                 gameState
 
     | AMoat -> GameState.drawFor MOAT_CARD_COUNT aId gameState
