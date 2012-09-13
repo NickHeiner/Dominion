@@ -655,18 +655,21 @@ module ActionTests =
 
 module BotTests =
     let buy toBuy hand game = 
-        let id = PId 0
+        let pId = PId 0
         game 
-        |> GameState.updatePlayer id (fun player -> {player with hand = hand})
-        |> BotHandler.GameStateUpdate.applyFirstValidBuy id [(Always, toBuy)]
-        |> GameState.getPlayer id
+        |> GameState.updatePlayer pId (fun player -> {player with hand = hand
+                                                                  bot = "foo", [], [(Always, toBuy)]})
+        |> BotHandler.GameStateUpdate.applyFirstValidBuy pId 
+        |> GameState.getPlayer pId
         |> GameState.getDiscard
 
     let [<Test>] ``pass bot does nothing`` () = 
         let pId = PId 0
-        BotHandler.GameStateUpdate.applyFirstValidBuy pId [] protoGame 
-        |> BotHandler.GameStateUpdate.applyFirstValidAction pId []
-        |> Utils.equalWithoutLog protoGame
+        let withPassBot = GameState.updatePlayer pId (fun player -> {player with bot = "pass", [], []}) protoGame
+        withPassBot
+        |> BotHandler.GameStateUpdate.applyFirstValidBuy pId
+        |> BotHandler.GameStateUpdate.applyFirstValidAction pId
+        |> Utils.equalWithoutLog withPassBot
         |> should be True
 
     let [<Test>] ``legal buy`` () = 
@@ -692,33 +695,41 @@ module BotTests =
         |> buy toBuy [Coin Gold; Coin Gold]
         |> Utils.contains toBuy |> should be False
 
+    let makeSimpleBot actions = "bot", actions, []
+
     let [<Test>] ``legal action`` () =
         let id = PId 0
         let deck = [Coin Copper; Victory Estate; Victory Duchy]
         (protoGame 
-        |> GameState.updatePlayer id (fun player -> {player with hand = [Action Smithy]; deck = deck})
-        |> BotHandler.GameStateUpdate.applyFirstValidAction id [(Always, ASmithy)]
+        |> GameState.updatePlayer id (fun player -> {player with hand = [Action Smithy]
+                                                                 deck = deck
+                                                                 bot = makeSimpleBot [(Always, ASmithy)]})
+        |> BotHandler.GameStateUpdate.applyFirstValidAction id 
         |> GameState.getPlayer id).hand 
         |> Set.ofList
         |> should equal (Set.ofList deck)
 
     let [<Test>] ``illegal action doesn't have card`` () =
-        let id = PId 0
+        let pId = PId 0
         let origHand = [Coin Copper]
-        (protoGame 
-        |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
-        |> BotHandler.GameStateUpdate.applyFirstValidAction id [(Always, ASmithy)]
-        |> GameState.getPlayer id).hand 
+        protoGame 
+        |> GameState.updatePlayer pId (fun player -> {player with hand = origHand
+                                                                  bot = makeSimpleBot [(Always, ASmithy)]})
+        |> BotHandler.GameStateUpdate.applyFirstValidAction pId 
+        |> GameState.getPlayer pId
+        |> GameState.getHand
         |> should equal origHand
 
     let [<Test>] ``illegal action not enough actions`` () =
-        let id = PId 0
+        let pId = PId 0
         let origHand = [Action Smithy]
-        (protoGame 
+        protoGame 
         |> GameState.withTurn {protoGame.currentTurn with actions = 0}
-        |> GameState.updatePlayer id (fun player -> {player with hand = origHand})
-        |> BotHandler.GameStateUpdate.applyFirstValidAction id [(Always, ASmithy)]
-        |> GameState.getPlayer id).hand 
+        |> GameState.updatePlayer pId (fun player -> {player with hand = origHand
+                                                                  bot = makeSimpleBot [(Always, ASmithy)]})
+        |> BotHandler.GameStateUpdate.applyFirstValidAction pId
+        |> GameState.getPlayer pId
+        |> GameState.getHand
         |> should equal origHand
 
     let [<Test>] ``evalCond always`` () = 
@@ -771,55 +782,63 @@ module BotTests =
         let missingCard' = Victory Curse
         (check missingCard missingCard' || check missingCard' missingCard) |> should be True
 
+    let withBot pId actions = GameState.updatePlayer pId (fun player -> {player with bot = makeSimpleBot actions})
+    let withBuyBot pId buys = GameState.updatePlayer pId (fun player -> {player with bot = "buybot", [], buys})
+
     let [<Test>] ``find valid action`` () =
         let aId = PId 0
         let toAct = ASmithy
         protoGame
+        |> withBot aId [(Always, AVillage)
+                        (CountInCardsLessThan (100, Coin Gold), toAct)
+                        (Always, ABureaucrat)]
         |> withActionCard aId Smithy
-        |> GameStateUpdate.findFirstValidAction aId [(Always, AVillage);
-                                                      (CountInCardsLessThan (100, Coin Gold), toAct);
-                                                      (Always, ABureaucrat)]
+        |> GameStateUpdate.findFirstValidAction aId 
         |> should equal <| Some toAct
         
     let [<Test>] ``find invalid action`` () =
         let aId = PId 0
         let toAct = ASmithy
         protoGame
+        |> withBot aId [(Always, AVillage)
+                        (Always, AFeast <| Victory Province)
+                        (Always, ABureaucrat)]
         |> withActionCard aId Feast
-        |> GameStateUpdate.findFirstValidAction aId [(Always, AVillage);
-                                                      (Always, AFeast <| Victory Province);
-                                                      (Always, ABureaucrat)]
+        |> GameStateUpdate.findFirstValidAction aId 
         |> should equal None
 
     let [<Test>] ``find no valid action`` () =
         let aId = PId 0
         let toAct = ASmithy
         protoGame
-        |> GameStateUpdate.findFirstValidAction aId [(Always, AVillage);
-                                                      (CountInCardsLessThan (100, Coin Gold), toAct);
-                                                      (Always, ABureaucrat)]
+        |> withBot aId [(Always, AVillage)
+                        (CountInCardsLessThan (100, Coin Gold), toAct)
+                        (Always, ABureaucrat)]
+        |> GameStateUpdate.findFirstValidAction aId 
         |> should equal None
 
     let [<Test>] ``find valid buy`` () =
         let aId = PId 1
         let toBuy = Victory Duchy
-        protoGame
+        protoGame 
+        |> withBuyBot aId [(Always, Victory Province)
+                           (Always, Coin Gold)
+                           (ExpectedPerHandLessThan (2., Action Mine), toBuy)
+                           (Always, Action Moat)]
         |> GameState.updatePlayer aId (fun player -> {player with hand = [Coin Silver; Coin Copper; Coin Copper; Coin Copper]}) 
-        |> GameStateUpdate.findFirstValidBuy aId [(Always, Victory Province);
-                                                  (Always, Coin Gold);
-                                                  (ExpectedPerHandLessThan (2., Action Mine), toBuy);
-                                                  (Always, Action Moat)]
+        |> GameStateUpdate.findFirstValidBuy aId 
         |> should equal <| Some toBuy
 
     let [<Test>] ``find no valid buy`` () =
         let aId = PId 1
         let toBuy = Action Mine
         protoGame
+        |> withBuyBot aId [(Always, Victory Province)
+                           (Always, Coin Gold)
+                           (ExpectedPerHandLessThan (2., Action Mine), toBuy)
+                           (Always, Action Moat)]
         |> GameState.updatePlayer aId (fun player -> {player with hand = [Coin Copper]}) 
-        |> GameStateUpdate.findFirstValidBuy aId [(Always, Victory Province);
-                                                  (Always, Coin Gold);
-                                                  (ExpectedPerHandLessThan (2., Action Mine), toBuy);
-                                                  (Always, Action Moat)]
+        |> GameStateUpdate.findFirstValidBuy aId 
         |> should equal None
 
     let [<Test>] ``action cards required`` () =
@@ -1117,7 +1136,7 @@ module GameTests =
                                                                   hand = List.replicate (supply * 5) <| Coin Gold
                                                                   deck=[]
                                                                   discard=[]})
-        |> Dominion.Game.applyTurn bot pId
+        |> Dominion.Game.applyTurn pId
         |> GameState.getPlayer pId
         |> Utils.allCards
         |> List.filter ((=) toBuy)
@@ -1140,8 +1159,9 @@ module GameTests =
         let afterTurn = protoGame
                         |> GameState.withCards [toBuy0; toBuy1]
                         |> GameState.updatePlayer pId (fun player -> {player with hand = initialHand
-                                                                                  deck = deck})
-                        |> Dominion.Game.applyTurn bot pId
+                                                                                  deck = deck
+                                                                                  bot = bot})
+                        |> Dominion.Game.applyTurn pId
         
         let afterTurnPlayerCards =
             afterTurn

@@ -44,7 +44,6 @@
     <Compile Include="Utils.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
-    <Compile Include="FsUnitSample.fs" />
     <Compile Include="GameState.fs" />
     <Compile Include="ActionCards.fs" />
     <Compile Include="BotHandler.fs" />

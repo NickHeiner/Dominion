@@ -13,14 +13,13 @@ module Game =
     let gardensCount = Utils.countOccurences cards (Victory Gardens)
     (List.sumBy victoryPointsFor cards) + gardensCount * (List.length cards / GARDENS_FACTOR)
 
-  let rec applyUpdate apply pId bot gameState =
-    let afterUpdate = apply pId bot gameState
-    if Utils.equalWithoutLog afterUpdate gameState then afterUpdate else applyUpdate apply pId bot afterUpdate
+  let rec applyUpdate apply pId gameState =
+    let afterUpdate = apply pId gameState
+    if Utils.equalWithoutLog afterUpdate gameState then afterUpdate else applyUpdate apply pId afterUpdate
 
-  let applyTurn bot pId gameState =
-    let _, acts, buys = bot
-    applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction pId acts gameState
-    |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy pId buys
+  let applyTurn pId gameState =
+    applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction pId gameState
+    |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy pId 
 
   let rec round (gameState : gameState) = 
     (* TODO why do we need `players` as a separate var? Why not just gameState.players? *)
@@ -29,7 +28,7 @@ module Game =
         match players with
           | [] -> gameState
           | hd::tl -> let afterTurn = 
-                        applyTurn hd.bot pId gameState
+                        applyTurn pId gameState
                         |> GameState.updatePlayer pId (fun player -> GameState.discardAll player |> GameState.draw 5)
                         |> GameState.nextTurn
                       turn tl afterTurn <| PId (index + 1)

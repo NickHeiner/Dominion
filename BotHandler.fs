@@ -56,15 +56,15 @@
                                                         withPlayer
 
         (* TODO Why do all these take acts or buys if they're already getting pId and gameState? It's redundant. *)
-        let findFirstValidAction pId acts gameState =
+        let findFirstValidAction pId gameState =
             match List.tryFind (fun (cond, actCard) -> evalCond gameState pId cond
-                                                       && canAct pId gameState actCard) acts with
+                                                       && canAct pId gameState actCard) <| GameState.getActs pId gameState with
                 | Some (_, argActCard) -> Some argActCard
                 | None -> None
 
-        let findFirstValidBuy pId buys gameState = 
+        let findFirstValidBuy pId gameState = 
             match List.tryFind (function (cond, card) -> evalCond gameState pId cond
-                                                         && canBuy pId gameState card) buys with
+                                                         && canBuy pId gameState card)  <| GameState.getBuys pId gameState with
                     | Some (_, card) -> Some card
                     | None -> None
         
@@ -75,13 +75,13 @@
                                                                                    currHand = GameState.getPlayer pId preGameState
                                                                                               |> GameState.getHand}::gameState.log}
 
-        let applyFirstValidBuy pId buys gameState =
-            match findFirstValidBuy pId buys gameState with
+        let applyFirstValidBuy pId gameState =
+            match findFirstValidBuy pId gameState with
                 | Some card -> withLogEntry pId (buy pId card gameState) gameState <| Buy card
                 | None -> withLogEntry pId gameState gameState PassBuy 
 
-        let applyFirstValidAction pId acts gameState =
-            match findFirstValidAction pId acts gameState with
+        let applyFirstValidAction pId gameState =
+            match findFirstValidAction pId gameState with
                 | Some card -> withLogEntry pId (act pId card gameState) gameState <| Act card
                 | None -> withLogEntry pId gameState gameState PassAct 
 

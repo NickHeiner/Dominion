@@ -78,8 +78,9 @@ let defaultFind key ifNotFound map =
     |   Some value -> value
     |   None -> ifNotFound 
 
-let mid (_, x, _) = x
 let fst3 (x, _, _) = x
+let mid  (_, x, _) = x
+let thd  (_, _, x) = x
 
 let toString x = sprintf "%A" x
 

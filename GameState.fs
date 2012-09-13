@@ -100,6 +100,9 @@ let gainCard = addCards 1
 let foldByPlayers (f : gameState -> pId -> gameState) gameState = Seq.fold f gameState <| getIdRange gameState
 let foldPlayers f gameState = Seq.fold (fun game pId -> updatePlayer pId (f pId) game) gameState <| getIdRange gameState
 
+let getActs pId gameState = (getPlayer pId gameState).bot |> Utils.mid
+let getBuys pId gameState = (getPlayer pId gameState).bot |> Utils.thd
+
 let deckLen pId gameState = getPlayer pId gameState
                             |> getDeck
                             |> List.length
