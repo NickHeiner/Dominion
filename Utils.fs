@@ -85,6 +85,6 @@ let thd  (_, _, x) = x
 let toString x = sprintf "%A" x
 
 let pick set = match Set.toList set with
-                | [] -> failwith "Expected more than 0 elements"
+                | [] -> invalidArg "set" "Expected more than 0 elements"
                 | hd::[] -> hd
-                | _::_::_ -> failwith <| sprintf "Expected set %A to contain only a single element" set
+                | _::_::_ -> invalidArg "set" <| sprintf "Expected set %A to contain only a single element" set

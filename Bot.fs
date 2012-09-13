@@ -61,10 +61,10 @@ let hugeBitch = "Huge bitch",
                  Always, AThroneRoom AWitch
                  Always, AWitch],
 
-                standard [Always, Coin Gold;
+                standard [Always, Coin Gold
                           maintainExpectedPerHand 1. <| Action Witch
                           maintainExpectedPerHand 1. <| Action ThroneRoom
-                          Always, Coin Silver; (* but sometimes we want a village, too *)
+                          Always, Coin Silver (* but sometimes we want a village, too *)
                          ]
 
 let cash = "Cas$ha",

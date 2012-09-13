@@ -50,11 +50,30 @@ type libraryChoice =
         interface System.IComparable with
             member x.CompareTo(y) = (match y with :? libraryChoice -> 0 | _ -> failwith "wrong type")
 
-type argActCard = ACellar of cellarChoice | AChapel of card option * card option* card option * card option
-                | AChancellor of reshuffle | AVillage | AWoodcutter | AFeast of card | AMilitia | AMoneylender | ARemodel of card * card
-                | ASmithy | ASpy of spyChoice | AThief of thiefChoice | AThroneRoom of argActCard 
-                | ACouncilRoom | AFestival | ALaboratory | ALibrary of libraryChoice | AMarket
-                | AMine of CoinCard | AWitch | AAdventurer | AMoat | ABureaucrat | AWorkshop of card
+type argActCard = ACellar of cellarChoice
+                | AChapel of card option * card option* card option * card option
+                | AChancellor of reshuffle
+                | AVillage 
+                | AWoodcutter 
+                | AFeast of card 
+                | AMilitia 
+                | AMoneylender 
+                | ARemodel of card * card
+                | ASmithy 
+                | ASpy of spyChoice 
+                | AThief of thiefChoice 
+                | AThroneRoom of argActCard 
+                | ACouncilRoom 
+                | AFestival 
+                | ALaboratory 
+                | ALibrary of libraryChoice 
+                | AMarket
+                | AMine of CoinCard 
+                | AWitch 
+                | AAdventurer 
+                | AMoat 
+                | ABureaucrat 
+                | AWorkshop of card
 
 let getRaw = function
                 | ACellar _ -> Cellar
@@ -90,6 +109,7 @@ type cond = Always | ExpectedPerHandLessThan of float * card | CountInCardsLessT
 
 type act = (cond * argActCard) list
 type buy = (cond * card) list
+(* I'm not in love with using a tuple instead of record. *)
 type bot = string * act * buy (* string = name *)
 
 [<CustomEquality; NoComparisonAttribute>]

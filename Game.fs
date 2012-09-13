@@ -19,15 +19,17 @@ module Game =
 
   let applyTurn gameState pId =
     if gameOver gameState then gameState else 
-    applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction pId gameState
+    gameState 
+    |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction pId 
     |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy pId 
+
   let applyTurn' pId gameState = applyTurn gameState pId
 
   let rec round initGame =
     if gameOver initGame then initGame else
     round {GameState.foldByPlayers applyTurn initGame with roundsPlayed = initGame.roundsPlayed + 1}
 
-  let getInitialState (bots : bot list) =
+  let getInitialState bots =
     let actionCardsRequired = bots
                                 |> BotHandler.actionCardsRequired 
                                 |> Set.map (Action)
