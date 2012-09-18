@@ -1082,34 +1082,86 @@ module ExcelRendererTests =
                                            buys = 2
                                            purchasingPower = 7}}]]
 
-        actual |> should equal (Map.ofList [(Row 0, Col 0), "0"
-                                            (Row 0, Col 1), "3"
-                                            (Row 0, Col 2), "Gulliver"
-                                            (Row 0, Col 3), "Buy"
-                                            (Row 0, Col 4), "Action Smithy"
-                                            (Row 0, Col 5), "Action Smithy, Coin Gold"
-                                            (Row 0, Col 6), "6"
-                                            (Row 0, Col 7), "9"
-                                            (Row 0, Col 8), "1"
-                                            (Row 1, Col 0), "0"
-                                            (Row 1, Col 1), "3"
-                                            (Row 1, Col 2), "Samson"
-                                            (Row 1, Col 3), "Act"
-                                            (Row 1, Col 4), "AMine Silver"
-                                            (Row 1, Col 5), ""
-                                            (Row 1, Col 6), "3"
-                                            (Row 1, Col 7), "10"
-                                            (Row 1, Col 8), "0"
-                                            (Row 2, Col 0), "1"
-                                            (Row 2, Col 1), "9"
-                                            (Row 2, Col 2), "Loon"
-                                            (Row 2, Col 3), "Buy"
-                                            (Row 2, Col 4), "Victory Gardens"
-                                            (Row 2, Col 5), "Victory Estate, Victory Estate"
-                                            (Row 2, Col 6), "5"
-                                            (Row 2, Col 7), "2"
-                                            (Row 2, Col 8), "7"])
+        actual
+        |> Map.map (fun _ o -> string o)
+        |> should equal (Map.ofList [(Row 0, Col 0), "0"
+                                     (Row 0, Col 1), "3"
+                                     (Row 0, Col 2), "Gulliver"
+                                     (Row 0, Col 3), "Buy"
+                                     (Row 0, Col 4), "Action Smithy"
+                                     (Row 0, Col 5), "Action Smithy, Coin Gold"
+                                     (Row 0, Col 6), "6"
+                                     (Row 0, Col 7), "9"
+                                     (Row 0, Col 8), "1"
+                                     (Row 1, Col 0), "0"
+                                     (Row 1, Col 1), "3"
+                                     (Row 1, Col 2), "Samson"
+                                     (Row 1, Col 3), "Act"
+                                     (Row 1, Col 4), "AMine Silver"
+                                     (Row 1, Col 5), ""
+                                     (Row 1, Col 6), "3"
+                                     (Row 1, Col 7), "10"
+                                     (Row 1, Col 8), "0"
+                                     (Row 2, Col 0), "1"
+                                     (Row 2, Col 1), "9"
+                                     (Row 2, Col 2), "Loon"
+                                     (Row 2, Col 3), "Buy"
+                                     (Row 2, Col 4), "Victory Gardens"
+                                     (Row 2, Col 5), "Victory Estate, Victory Estate"
+                                     (Row 2, Col 6), "5"
+                                     (Row 2, Col 7), "2"
+                                     (Row 2, Col 8), "7"])
 
+    let [<Test>] ``get cell bounds`` () =
+        let minRow = Row 1
+        let minCol = Col 2
+        let maxRow = Row 132
+        let maxCol = Col 5
+        let actual = getCellBounds <| Map.ofList [(minRow, Col 3), "asdfad"
+                                                  (Row 8, minCol), "asdfad"
+                                                  (maxRow, maxCol), "asdfad"
+                                                  (Row 13, Col 4), "asdfad"
+                                                 ]
+        actual |> should equal (minRow, minCol, maxRow, maxCol)
+
+    let [<Test>] ``verify cells not continuous`` () =
+        fun () -> verifyContinuous <| Map.ofList [(Row 0, Col 0), "daf"
+                                                  (Row 1, Col 3), "foo"
+                                                  (Row 2, Col 3), "bar"
+                                                  (Row 3, Col 3), "baz"]
+        |> should throw typeof<System.ArgumentException>
+
+    let [<Test>] ``verify cells not starting at 0 0`` () =
+        fun () -> verifyContinuous <| Map.ofList [(Row 1, Col 1), "daf"
+                                                  (Row 1, Col 2), "foo"
+                                                  (Row 2, Col 1), "bar"
+                                                  (Row 2, Col 2), "baz"]
+        |> should throw typeof<System.ArgumentException>
+
+    let [<Test>] ``verify cells continuous`` () =
+        fun () -> verifyContinuous <| Map.ofList [(Row 0, Col 0), "daf"
+                                                  (Row 0, Col 1), "foo"
+                                                  (Row 1, Col 0), "bar"
+                                                  (Row 1, Col 1), "baz"]
+        |> should not' (throw typeof<System.ArgumentException>)
+
+        
+    let [<Test>] ``get data of cells`` () =
+        let actual = cellDataOfCells <| Map.ofList [(Row 0, Col 0), "daf"
+                                                    (Row 0, Col 1), "foo"
+                                                    (Row 1, Col 0), "bar"
+                                                    (Row 1, Col 1), "baz"]
+        
+        (* This is awkward. Is there an Array2D literal? *)
+        let expected = Array2D.init 2 2 (fun i j -> match i, j with
+                                                    |  0, 0 -> "daf"
+                                                    |  0, 1 -> "foo"
+                                                    |  1, 0 -> "bar"
+                                                    |  1, 1 -> "baz"
+                                                    |  _ -> "oooooo body massage")
+
+        actual |> should equal expected
+        
 module GameTests =
     let [<Test>] ``hand restocked after round`` () = 
         let pId = PId 1

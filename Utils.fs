@@ -88,3 +88,18 @@ let pick set = match Set.toList set with
                 | [] -> invalidArg "set" "Expected more than 0 elements"
                 | hd::[] -> hd
                 | _::_::_ -> invalidArg "set" <| sprintf "Expected set %A to contain only a single element" set
+
+(* from http://blogs.msdn.com/b/dsyme/archive/2009/11/08/equality-and-comparison-constraints-in-f-1-9-7.aspx *)
+let compareOn f x (yobj: obj) =
+    match yobj with
+    | :? 'T as y -> compare (f x) (f y)
+    | _ -> invalidArg "yobj" "cannot compare values of different types"
+
+let equalsOn f x (yobj:obj) =
+        match yobj with
+        | :? 'T as y -> (f x = f y)
+        | _ -> false
+ 
+let hashOn f x =  hash (f x)
+
+let toObj items = Seq.map (fun x -> x :> obj) items

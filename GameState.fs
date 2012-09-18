@@ -43,6 +43,7 @@ let setDeck player deck = {player with deck = deck}
 let getDiscard player = player.discard
 
 let getPlayers game = game.players
+let getLog game = game.log
 
 let totalPurchasingPower pId gameState = 
   gameState.currentTurn.purchasingPower + List.sumBy purchasingPowerOf (getPlayer pId gameState |> getHand)

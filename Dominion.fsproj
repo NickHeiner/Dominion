@@ -58,6 +58,9 @@
       <HintPath>..\packages\FsCheck.0.7.1\lib\net35\FsCheck.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="FSharp.PowerPack, Version=1.9.9.9, Culture=neutral, PublicKeyToken=a19089b1c74d0809" />
+    <Reference Include="FSharp.PowerPack.Linq, Version=1.9.9.9, Culture=neutral, PublicKeyToken=a19089b1c74d0809" />
+    <Reference Include="FSharp.PowerPack.Parallel.Seq, Version=1.9.9.9, Culture=neutral, PublicKeyToken=a19089b1c74d0809" />
     <Reference Include="FsUnit.NUnit">
       <HintPath>..\packages\FsUnit.1.1.0.0\Lib\Net40\FsUnit.NUnit.dll</HintPath>
       <Private>True</Private>

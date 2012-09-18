@@ -5,33 +5,83 @@
     open Definitions
     open Constants
 
-    (* There is potential for sweet operator overloading for Row and Col *)
-    type row = Row of int
-    type col = Col of int
+    (* It's not obvious that these should be classes instead of plain structural types *)
+    type Row (x: int) =
+        let getRowIndex (r : Row) = r.x
+        member this.x = x
+        static member (+) (r : Row, r' : Row) = Row (r.x + r'.x)
+        static member (-) (r : Row, r' : Row) = Row (r.x - r'.x)
+        static member One = Row 1
+        interface System.IComparable with
+            member r.CompareTo yobj = Utils.compareOn getRowIndex r yobj
+        override r.Equals yobj = Utils.equalsOn getRowIndex r yobj
+        override r.GetHashCode () = Utils.hashOn getRowIndex r
 
-    let inline (+++) (Row r0) (Row r1) = Row <| r0 + r1
+    type Col (y: int) =
+        let getColIndex (c : Col) = c.y
+        member this.y = y
+        static member (+) (c : Col, c' : Col) = Col (c.y + c'.y)
+        static member (-) (c : Col, c' : Col) = Col (c.y - c'.y)
+        static member One = Col 1
+        interface System.IComparable with
+            member c.CompareTo yobj = Utils.compareOn getColIndex c yobj
+        override c.Equals yobj = Utils.equalsOn getColIndex c yobj
+        override c.GetHashCode () = Utils.hashOn getColIndex c
 
     (* Only handles columns up to ZZ.
        But there's no need to go beyond that now, so I'm going to leave it that way. *)
-    let makeCell (Row row) (Col col) = 
+    let makeCell (row : Row) (col : Col) = 
         let charCol =
             let maxCol = int 'Z' - int 'A'
-            if col <= maxCol
-                then 'A' + char col |> string
-                else ['A' + char (col / maxCol - 1); 'A' +  char (max (col % maxCol - 1) 0)]
+            if col.y <= maxCol
+                then 'A' + char col.y |> string
+                else ['A' + char (col.y / maxCol - 1); 'A' +  char (max (col.y % maxCol - 1) 0)]
                      |> List.map string
                      |> String.concat ""
-        sprintf "%s%d" charCol (row + 1)
+        sprintf "%s%d" charCol (row.x + 1)
 
     let range startRow startCol endRow endCol = sprintf "%s:%s" (makeCell startRow startCol) (makeCell endRow endCol)
     let singleCellRange row col =
         let cell = makeCell row col
         sprintf "%s:%s" cell cell
 
-    let render (worksheet : Worksheet) (Row startRowIndex) (Col startColIndex) =
-        Map.iter (fun (Row rowIndex, Col colIndex) entry ->
-                    let targetRange = singleCellRange (Row <| rowIndex + startRowIndex) (Col <| colIndex + startColIndex)
-                    worksheet.Range(targetRange).Value2 <- entry)
+    let getCellBounds cells =
+        Map.fold (fun (minRow, minCol, maxRow, maxCol) (row, col) _ -> min minRow row,
+                                                                       min minCol col,
+                                                                       max maxRow row,
+                                                                       max maxCol col)
+                 (Row System.Int32.MaxValue, Col System.Int32.MaxValue, Row 0, Col 0)
+                 cells
+
+    let cellDataOfCells cells = 
+        let _, _, maxRow, maxCol = getCellBounds cells
+        Array2D.init (maxRow + Row 1).x
+                     (maxCol + Col 1).y
+                     (fun rowIndex colIndex -> Map.find ((Row rowIndex), (Col colIndex)) cells)
+
+    let verifyContinuous cells =
+        let minRow, minCol, maxRow, maxCol = getCellBounds cells
+        if not <| (minRow = Row 0 && minCol = Col 0) then invalidArg "cells" "Cells must start at (0, 0)" else
+        if not (seq { for row in minRow .. maxRow do
+                         for col in minCol .. maxCol do
+                            yield row, col}
+                |> Seq.forall (fun key -> Map.containsKey key cells))
+        then invalidArg "cells" "Cells must contain content for each cell within its bounds"
+
+    let _render setter (worksheet : Worksheet) (startRow : Row) (startCol : Col) cells =
+        verifyContinuous cells
+        let minRow, minCol, maxRow, maxCol = getCellBounds cells
+        let targetRange = range (minRow + startRow) (minCol + startCol) (maxRow + startRow) (maxCol + startCol)
+        let cellData = cellDataOfCells cells
+        setter cellData <| worksheet.Range(targetRange)
+
+    (* It's necessary to spell out all the arguments b/c of something with F#'s type system that I don't understand. *)
+    let renderValues worksheet startRow startCol cells =
+        _render (fun cellData excelRange -> excelRange.Value2 <- cellData)
+                worksheet startRow startCol cells
+    let renderFormulae worksheet startRow startCol cells =
+        _render (fun cellData excelRange -> excelRange.Formula <- cellData)
+                worksheet startRow startCol cells 
 
     let makeWorksheet () = 
          let app = new ApplicationClass(Visible = true)
@@ -74,9 +124,9 @@
         |> Map.ofSeq
 
     let addAnalysisData worksheet placements =
-        render worksheet (Row 1) (Col 0) <| botNameLabels placements
-        render worksheet (Row 0) (Col 1) <| placeLabels placements
-        render worksheet (Row 1) (Col 1) <| placeFreqs placements
+        renderValues worksheet (Row 1) (Col 0) <| botNameLabels placements
+        renderValues worksheet (Row 0) (Col 1) <| placeLabels placements
+        renderValues worksheet (Row 1) (Col 1) <| placeFreqs placements
 
         let chartobjects = (worksheet.ChartObjects() :?> ChartObjects) 
         let chartobject = chartobjects.Add(400.0, 20.0, 550.0, 350.0) 
@@ -135,16 +185,15 @@
         List.mapi (fun index (name, _) -> (Row index, Col 0), name)
         >> Map.ofList
 
-    let aggrFormulasOf stats statsOutput ((Row dataRowStart) as rowStart) (Col dataColStart) =
+    let aggrFormulasOf stats statsOutput dataRowStart dataColStart =
         let colCount = (allCards stats |> List.length) + 1 (* +1 for score column *)
         let rowCount = Seq.length stats
         let formulae = List.map snd statsOutput
-        let lastRow = Row <| rowCount + dataRowStart
+        let lastRow = Row rowCount + dataRowStart
         seq {for row in 0 .. List.length statsOutput - 1 do
                 for col in 0 .. colCount - 1 do
-                    let currCol = Col <| col + dataColStart
-                    let sourceRange = range rowStart currCol
-                                            lastRow  currCol
+                    let currCol = Col col + dataColStart
+                    let sourceRange = range dataRowStart currCol lastRow currCol
                     yield (Row row, Col col), sprintf "=%s(%s)" (List.nth formulae row) sourceRange
             }
         |> Map.ofSeq
@@ -159,22 +208,23 @@
             let worksheet = workbook.Worksheets.Add () :?> Worksheet
             worksheet.Name <- name
 
-            let renderWithOffset ((row, col), entries) = render worksheet row col entries
+            let renderWithOffset ((row, col), entries) = renderValues worksheet row col entries
 
             let aggr = aggrFormulasOf stats STATS_OUTPUT dataRowStart dataColStart
-            let aggrRow = dataRowStart +++ (Row dataRowCount) +++ (Row AGGR_EMPTY_LINES)
+            let aggrRow = dataRowStart + (Row dataRowCount) + (Row AGGR_EMPTY_LINES)
 
             (* We have to do these separately because they return strings numbers instead of strings *)
-            [(Row 1, Col 2), cardCountsOf stats;
+            [(Row 1, Col 2), cardCountsOf stats
              (Row 1, Col 1), scoresOf stats]
             |> List.iter renderWithOffset
 
-            [(Row 0, Col 1), Map.ofList [(Row 0, Col 0), "Score"];
-             (Row 0, Col 2), cardNamesOf stats;
-             (Row 1, Col 0), gameLabelsOf stats;
-             (aggrRow, Col 0), aggrLabelsOf STATS_OUTPUT;
-             (aggrRow, Col 1), aggr]
-            |> List.iter renderWithOffset)
+            [(Row 0, Col 1), Map.ofList [(Row 0, Col 0), "Score"]
+             (Row 0, Col 2), cardNamesOf stats
+             (Row 1, Col 0), gameLabelsOf stats
+             (aggrRow, Col 0), aggrLabelsOf STATS_OUTPUT]
+            |> List.iter renderWithOffset
+            
+            renderFormulae worksheet (aggrRow) (Col 1) aggr)
 
     let unpackEvent = function
         | Act card -> "Act", Utils.toString card
@@ -182,25 +232,29 @@
         | PassAct -> "Pass", "Act"
         | PassBuy -> "Pass", "Buy"
     
+    let cellOfContents row index contents = (row, Col index), contents
+
+    let entryToRow nameLookup rowIndex (gameId, logEntry) = 
+        let row = Row rowIndex
+        let eventName, eventArg = unpackEvent logEntry.event
+        ([gameId
+          logEntry.round
+          Map.find logEntry.pId nameLookup
+          eventName
+          eventArg
+          logEntry.currHand |> List.map Utils.toString |> String.concat ", "
+          logEntry.turn.actions
+          logEntry.turn.buys
+          logEntry.turn.purchasingPower] : obj list)
+        |> Seq.mapi (cellOfContents row)
+
     let getLogCells nameLookup =
         List.mapi (fun gameId -> List.map (fun entry -> gameId, entry) >> List.rev)
         >> Seq.concat
-        >> Seq.mapi (fun rowIndex (gameId, logEntry) -> 
-                        let row = Row rowIndex
-                        let eventName, eventArg = unpackEvent logEntry.event
-                        [Utils.toString gameId
-                         Utils.toString logEntry.round
-                         Map.find logEntry.pId nameLookup
-                         eventName
-                         eventArg
-                         logEntry.currHand |> List.map Utils.toString |> String.concat ", "
-                         Utils.toString logEntry.turn.actions
-                         Utils.toString logEntry.turn.buys
-                         Utils.toString logEntry.turn.purchasingPower]
-                        |> List.mapi (fun index contents -> (row, Col index), contents))
+        >> Seq.mapi (entryToRow nameLookup)
         >> Seq.concat
         >> Map.ofSeq
-
+        
     let addLog (workbook : Workbook) games = 
         let worksheet = workbook.Worksheets.Add () :?> Worksheet
         worksheet.Name <- "Log"
@@ -216,7 +270,7 @@
          "Purchasing Power"]
          |> List.mapi (fun index header -> (Row 0, Col index), header)
          |> Map.ofList
-         |> render worksheet (Row 0) (Col 0)
+         |> renderValues worksheet (Row 0) (Col 0)
        
         let nameLookup =
             match games with
@@ -225,7 +279,7 @@
                          |> Map.ofList
             |   [] -> Map.empty
         
-        render worksheet (Row 1) (Col 0) <| getLogCells nameLookup (List.map (fun game -> game.log) games)
+        renderValues worksheet (Row 1) (Col 0) <| getLogCells nameLookup (List.map GameState.getLog games)
 
 
 

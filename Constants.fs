@@ -5,7 +5,7 @@ open Definitions
 (* Cards that start in the supply for each game *)
 let STARTING_CARDS = [Victory Province; Victory Duchy; Victory Estate; Victory Curse; Victory Gardens; Coin Gold; Coin Silver; Coin Copper]
 
-let ROUND_LIMIT = 10
+let ROUND_LIMIT = 1000
 
 let ACTION_CARDS_PER_GAME = 10
 

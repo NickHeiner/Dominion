@@ -57,14 +57,6 @@ module Game =
 
     Bot.bots |> getInitialState |> round 
 
-  let playGames () =
-    (* TODO Maybe we should validate the game (ie check count of action cards required) before launching the threads *)
-    Async.Parallel [ for i in 0..GAMES_TO_PLAY - 1 -> async { let result = playGame ()
-                                                              printf "."
-                                                              return result } ]
-    |> Async.RunSynchronously
-    |> Array.toList
-
   let cardCountsOfPlayer = 
     Utils.allCards 
     >> Seq.ofList
@@ -81,15 +73,19 @@ module Game =
     >> List.sortBy (fun stats -> stats.score)
     >> List.rev
 
+  let playGames () =
+    (* TODO Maybe we should validate the game (ie check count of action cards required) before launching the threads *)
+    Async.Parallel [ for i in 0..GAMES_TO_PLAY - 1 -> async { let result = playGame ()
+                                                              printf "."
+                                                              return result, gameToPlayerStats Bot.bots result } ]
+    |> Async.RunSynchronously
+    |> Array.toList
+
   let main _ = 
      printfn "Dominion!"
      printfn "Kicking off %d games" GAMES_TO_PLAY
 
-     let finishedGames = playGames ()
-
-     let gameResults =
-        finishedGames 
-        |> List.map (gameToPlayerStats Bot.bots)
+     let finishedGames, gameResults = playGames () |> List.unzip
 
      let placements = 
         gameResults
@@ -102,11 +98,16 @@ module Game =
         |> Seq.map (fun (name, placements) -> name, Seq.countBy snd placements |> Map.ofSeq)
         |> Map.ofSeq
 
+     printf "Done playing.\nExporting data to Excel"
+
      let workbook, analysisWorksheet = ExcelRenderer.makeWorksheet ()
+     workbook.Application.ScreenUpdating <- false
      ExcelRenderer.addAnalysisData analysisWorksheet placements
      ExcelRenderer.addLog workbook finishedGames
      ExcelRenderer.addBotData workbook gameResults
      analysisWorksheet.Activate ()
+     workbook.Application.Calculate ()
+     workbook.Application.ScreenUpdating <- true
 
      0
      
