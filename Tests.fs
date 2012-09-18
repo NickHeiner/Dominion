@@ -1111,6 +1111,19 @@ module ExcelRendererTests =
                                             (Row 2, Col 8), "7"])
 
 module GameTests =
+    let [<Test>] ``hand restocked after round`` () = 
+        let pId = PId 1
+        let origDeck = List.replicate Constants.CARDS_PER_HAND <| Victory Gardens
+        let origHand = List.replicate Constants.CARDS_PER_HAND <| Action Market
+        let afterPlayer = protoGame
+                          |> GameState.updatePlayer pId (fun player -> {player with hand = origHand
+                                                                                    deck = origDeck
+                                                                                    discard = []})
+                          |> Dominion.Game.applyTurn' pId
+                          |> GameState.getPlayer pId
+        afterPlayer.hand |> should equal origDeck
+        afterPlayer.discard |> should equal origHand
+
     let [<Test>] ``card limits enforced within same round`` () =
         let buyProvince = "buyer", [], [Always, Victory Province]
         {protoGame with cards   = Map.ofList [Victory Province, 1]

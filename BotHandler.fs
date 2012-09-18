@@ -55,7 +55,6 @@
                                                                  buys = withPlayer.currentTurn.buys - 1}
                                                         withPlayer
 
-        (* TODO Why do all these take acts or buys if they're already getting pId and gameState? It's redundant. *)
         let findFirstValidAction pId gameState =
             match List.tryFind (fun (cond, actCard) -> evalCond gameState pId cond
                                                        && canAct pId gameState actCard) <| GameState.getActs pId gameState with

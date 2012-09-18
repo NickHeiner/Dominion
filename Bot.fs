@@ -41,8 +41,6 @@ let mineSmithy2 =
 
     standard ((maintainEqualCounts (Action Smithy) (Action Mine)) @ [(Always, Coin Gold); (Always, Coin Silver)])
 
-
-
 let hugeBitchCellar = "Huge Bitch Cellar",
                       [Always, AVillage
                        cellarVictories
@@ -54,7 +52,6 @@ let hugeBitchCellar = "Huge Bitch Cellar",
                                 maintainExpectedPerHand 1. <| Action ThroneRoom
                                 Always, Coin Silver; (* but sometimes we want a village, too *)
                                 CountInCardsLessThan (1, Action Cellar), Action Cellar]
-
 
 let hugeBitch = "Huge bitch",
                 [Always, AVillage
