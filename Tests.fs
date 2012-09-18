@@ -9,6 +9,8 @@ open BotHandler
 let protoGame = Dominion.Game.getInitialState (List.replicate 5 ("Empty", [], []))
                 |> GameState.withCards STARTING_CARDS
 
+let makeSimpleBot actions = "bot", actions, []
+
 let memberEquals items1 items2 = List.sort items1 |> should equal <| List.sort items2
 
 let withCard pId card = GameState.updatePlayer pId (fun player -> {player with hand = card::player.hand})
@@ -695,8 +697,6 @@ module BotTests =
         |> buy toBuy [Coin Gold; Coin Gold]
         |> Utils.contains toBuy |> should be False
 
-    let makeSimpleBot actions = "bot", actions, []
-
     let [<Test>] ``legal action`` () =
         let id = PId 0
         let deck = [Coin Copper; Victory Estate; Victory Duchy]
@@ -1123,6 +1123,17 @@ module GameTests =
                           |> GameState.getPlayer pId
         afterPlayer.hand |> should equal origDeck
         afterPlayer.discard |> should equal origHand
+
+    let [<Test>] ``purchasing power, buys, and actions refreshed for new turn`` () =
+        let pId = PId 0
+        let postCurrentTurn = 
+            (protoGame
+            |> GameState.updatePlayer pId (fun player -> {player with hand = [Action Smithy; Coin Gold]
+                                                                      bot  = "bot", [Always, ASmithy], [Always, Victory Estate]})
+            |> Dominion.Game.applyTurn' pId).currentTurn
+        postCurrentTurn.actions |> should equal GameState.initialTurn.actions
+        postCurrentTurn.buys |> should equal GameState.initialTurn.buys
+        postCurrentTurn.purchasingPower |> should equal GameState.initialTurn.purchasingPower
 
     let [<Test>] ``card limits enforced within same round`` () =
         let buyProvince = "buyer", [], [Always, Victory Province]

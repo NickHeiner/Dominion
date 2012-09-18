@@ -23,6 +23,7 @@ module Game =
     |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidAction pId 
     |> applyUpdate BotHandler.GameStateUpdate.applyFirstValidBuy pId 
     |> GameState.updatePlayer pId (GameState.discardAll >> GameState.draw Constants.CARDS_PER_HAND)
+    |> GameState.nextTurn
 
   let applyTurn' pId gameState = applyTurn gameState pId
 
