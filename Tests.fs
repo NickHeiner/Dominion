@@ -1039,6 +1039,7 @@ module ExcelRendererTests =
                  (Row 1, Col 0), "=bnbs(C3:C5)"; (Row 1, Col 1), "=bnbs(D3:D5)"; (Row 1, Col 2), "=bnbs(E3:E5)"; (Row 1, Col 3), "=bnbs(F3:F5)"; (Row 1, Col 4), "=bnbs(G3:G5)"
                  (Row 2, Col 0), "=bucket(C3:C5)"; (Row 2, Col 1), "=bucket(D3:D5)"; (Row 2, Col 2), "=bucket(E3:E5)"; (Row 2, Col 3), "=bucket(F3:F5)"; (Row 2, Col 4), "=bucket(G3:G5)"
                 ]
+            |> Map.map (fun _ value -> box value)
         actual |> should equal expected
 
     let [<Test>] ``allCards dups`` () =

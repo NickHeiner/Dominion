@@ -68,20 +68,12 @@
                 |> Seq.forall (fun key -> Map.containsKey key cells))
         then invalidArg "cells" "Cells must contain content for each cell within its bounds"
 
-    let _render setter (worksheet : Worksheet) (startRow : Row) (startCol : Col) cells =
+    let render (worksheet : Worksheet) (startRow : Row) (startCol : Col) cells =
         verifyContinuous cells
         let minRow, minCol, maxRow, maxCol = getCellBounds cells
         let targetRange = range (minRow + startRow) (minCol + startCol) (maxRow + startRow) (maxCol + startCol)
         let cellData = cellDataOfCells cells
-        setter cellData <| worksheet.Range(targetRange)
-
-    (* It's necessary to spell out all the arguments b/c of something with F#'s type system that I don't understand. *)
-    let renderValues worksheet startRow startCol cells =
-        _render (fun cellData excelRange -> excelRange.Value2 <- cellData)
-                worksheet startRow startCol cells
-    let renderFormulae worksheet startRow startCol cells =
-        _render (fun cellData excelRange -> excelRange.Formula <- cellData)
-                worksheet startRow startCol cells 
+        worksheet.Range(targetRange).Value2 <- cellData
 
     let makeWorksheet () = 
          let app = new ApplicationClass(Visible = true)
@@ -124,9 +116,9 @@
         |> Map.ofSeq
 
     let addAnalysisData worksheet placements =
-        renderValues worksheet (Row 1) (Col 0) <| botNameLabels placements
-        renderValues worksheet (Row 0) (Col 1) <| placeLabels placements
-        renderValues worksheet (Row 1) (Col 1) <| placeFreqs placements
+        render worksheet (Row 1) (Col 0) <| botNameLabels placements
+        render worksheet (Row 0) (Col 1) <| placeLabels placements
+        render worksheet (Row 1) (Col 1) <| placeFreqs placements
 
         let chartobjects = (worksheet.ChartObjects() :?> ChartObjects) 
         let chartobject = chartobjects.Add(400.0, 20.0, 550.0, 350.0) 
@@ -194,7 +186,7 @@
                 for col in 0 .. colCount - 1 do
                     let currCol = Col col + dataColStart
                     let sourceRange = range dataRowStart currCol lastRow currCol
-                    yield (Row row, Col col), sprintf "=%s(%s)" (List.nth formulae row) sourceRange
+                    yield (Row row, Col col), box <| sprintf "=%s(%s)" (List.nth formulae row) sourceRange
             }
         |> Map.ofSeq
 
@@ -208,7 +200,7 @@
             let worksheet = workbook.Worksheets.Add () :?> Worksheet
             worksheet.Name <- name
 
-            let renderWithOffset ((row, col), entries) = renderValues worksheet row col entries
+            let renderWithOffset ((row, col), entries) = render worksheet row col entries
 
             let aggr = aggrFormulasOf stats STATS_OUTPUT dataRowStart dataColStart
             let aggrRow = dataRowStart + (Row dataRowCount) + (Row AGGR_EMPTY_LINES)
@@ -224,7 +216,7 @@
              (aggrRow, Col 0), aggrLabelsOf STATS_OUTPUT]
             |> List.iter renderWithOffset
             
-            renderFormulae worksheet (aggrRow) (Col 1) aggr)
+            render worksheet (aggrRow) (Col 1) aggr)
 
     let unpackEvent = function
         | Act card -> "Act", Utils.toString card
@@ -270,7 +262,7 @@
          "Purchasing Power"]
          |> List.mapi (fun index header -> (Row 0, Col index), header)
          |> Map.ofList
-         |> renderValues worksheet (Row 0) (Col 0)
+         |> render worksheet (Row 0) (Col 0)
        
         let nameLookup =
             match games with
@@ -279,7 +271,7 @@
                          |> Map.ofList
             |   [] -> Map.empty
         
-        renderValues worksheet (Row 1) (Col 0) <| getLogCells nameLookup (List.map GameState.getLog games)
+        render worksheet (Row 1) (Col 0) <| getLogCells nameLookup (List.map GameState.getLog games)
 
 
 
